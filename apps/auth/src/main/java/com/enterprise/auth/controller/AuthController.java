@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.enterprise.auth.dto.request.LoginRequestDTO;
+import com.enterprise.auth.dto.response.LoginResponseDTO;
 import com.enterprise.auth.service.UsersService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,7 +26,7 @@ import reactor.core.publisher.Mono;
 @RestController
 @RequiredArgsConstructor
 @Slf4j
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
 @Validated
 @Tag(name = "Authentication", description = "Authentication endpoints for enterprise users")
 public class AuthController {
@@ -51,7 +52,7 @@ public class AuthController {
         @ApiResponse(responseCode = "401", description = "Invalid employee ID or password"),
         @ApiResponse(responseCode = "403", description = "Employee is not active")
     })
-    public Mono<?> login(
+    public Mono<LoginResponseDTO> login(
         @Valid @RequestBody LoginRequestDTO requestDTO
     ) {
         return usersService.login(requestDTO);
