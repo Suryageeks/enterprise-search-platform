@@ -1,0 +1,76 @@
+{
+  "version": 3,
+  "name": "ai-enterprise-search-gateway",
+  "port": 8080,
+  "extra_config": {
+    "router": {
+      "return_error_msg": true
+    }
+  },
+  "endpoints": [
+    {
+      "endpoint": "/api/auth/{path}",
+      "method": "GET",
+      "timeout": "10s",
+      "backend": [
+        {
+          "host": ["http://host.docker.internal:8082"],
+          "url_pattern": "/auth/{path}",
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/auth/{path}",
+      "method": "POST",
+      "timeout": "10s",
+      "backend": [
+        {
+          "host": ["http://host.docker.internal:8082"],
+          "url_pattern": "/auth/{path}",
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/auth/{path}",
+      "method": "PUT",
+      "timeout": "10s",
+      "backend": [
+        {
+          "host": ["http://host.docker.internal:8082"],
+          "url_pattern": "/auth/{path}",
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/auth/{path}",
+      "method": "DELETE",
+      "timeout": "10s",
+      "backend": [
+        {
+          "host": ["http://host.docker.internal:8082"],
+          "url_pattern": "/auth/{path}",
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
