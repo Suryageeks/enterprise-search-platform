@@ -1,0 +1,54 @@
+services:
+  # postgres:
+  #   image: postgres:16
+  #   container_name: postgres
+  #   environment:
+  #     POSTGRES_DB: search-postgres
+  #     POSTGRES_USER: admin
+  #     POSTGRES_PASSWORD: admin
+  #   ports:
+  #     - "5433:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql
+
+  redis:
+    image: redis:7
+    container_name: search-redis
+    ports:
+      - "6379:6379"
+
+  qdrant:
+    image: qdrant/qdrant
+    container_name: search-qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    ports:
+      - "4566:4566"
+      - "4510-4559:4510-4559"
+    environment:
+      - SERVICES=s3,sqs,dynamodb,lambda,apigateway,cloudformation,iam
+      - DEBUG=1
+      - DATA_DIR=/var/lib/localstack
+      - AWS_DEFAULT_REGION=ap-south-1
+      - EDGE_PORT=4566
+    volumes:
+      - ./localstack-data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  krakend:
+    image: krakend:latest
+    container_name: krakend
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./apps/gateway/krakend.json:/etc/krakend/krakend.json
+    command: ["run", "-c", "/etc/krakend/krakend.json"]
+
+volumes:
+  qdrant_data:
