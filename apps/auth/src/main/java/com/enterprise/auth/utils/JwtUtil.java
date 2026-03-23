@@ -27,6 +27,7 @@ public class JwtUtil {
         Date expiryDate = new Date(now.getTime() + Duration.ofSeconds(jwtExpiry).toMillis());
 
         return Jwts.builder()
+                .setHeaderParam("kid", "auth-hs256")
                 .setSubject(empId)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)

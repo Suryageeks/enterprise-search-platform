@@ -2,12 +2,14 @@ package com.enterprise.document;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 @SpringBootApplication
-public class DocumentApplication {
+@ConfigurationPropertiesScan
+public class Application {
 
 	public static void main(String[] args) {
-		SpringApplication.run(DocumentApplication.class, args);
+		SpringApplication.run(Application.class, args);
 	}
 
 }

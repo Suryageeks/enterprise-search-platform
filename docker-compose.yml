@@ -37,6 +37,9 @@ services:
       - DATA_DIR=/var/lib/localstack
       - AWS_DEFAULT_REGION=ap-south-1
       - EDGE_PORT=4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - DEFAULT_REGION=ap-south-1
     volumes:
       - ./localstack-data:/var/lib/localstack
       - /var/run/docker.sock:/var/run/docker.sock
@@ -48,6 +51,7 @@ services:
       - "8080:8080"
     volumes:
       - ./apps/gateway/krakend.json:/etc/krakend/krakend.json
+      - ./apps/gateway/jwk.json:/etc/krakend/jwk.json
     command: ["run", "-c", "/etc/krakend/krakend.json"]
 
 volumes:

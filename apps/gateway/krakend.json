@@ -71,6 +71,58 @@
           }
         }
       ]
+    },
+    {
+      "endpoint": "/api/document/upload",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "timeout": "30s",
+      "input_headers": ["Authorization", "Content-Type"],
+      "input_query_strings": ["empId"],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "HS256",
+          "jwk_local_path": "./jwk.json",
+          "disable_jwk_security": true
+        }
+      },
+      "backend": [
+        {
+          "host": ["http://host.docker.internal:8083"],
+          "url_pattern": "/document/upload",
+          "encoding": "no-op",
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/document/download-url/{docId}",
+      "method": "GET",
+      "timeout": "10s",
+      "input_headers": ["Authorization", "Content-Type"],
+      "input_query_strings": ["empId"],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "HS256",
+          "jwk_local_path": "./jwk.json",
+          "disable_jwk_security": true
+        }
+      },
+      "backend": [
+        {
+          "host": ["http://host.docker.internal:8083"],
+          "url_pattern": "/document/download-url/{docId}",
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ]
     }
   ]
 }

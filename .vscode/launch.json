@@ -19,6 +19,16 @@
       "projectName": "auth",
       "args": "",
       "envFile": "${workspaceFolder}/.env"
+    },
+    {
+      "type": "java",
+      "name": "Spring Boot-DocumentApplication<document>",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "mainClass": "com.enterprise.document.Application",
+      "projectName": "document",
+      "args": "",
+      "envFile": "${workspaceFolder}/.env"
     }
   ]
 }
