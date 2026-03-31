@@ -10,3 +10,16 @@ CREATE TABLE documents (
     created_at TIMESTAMPTZ NOT NULL default current_timestamp,
     updated_at TIMESTAMP
 );
+
+CREATE TABLE INGESTION_JOBS(
+ 	id SERIAL PRIMARY KEY,
+	job_id UUID,
+    emp_id VARCHAR(50) NOT NULL,
+    doc_id UUID,
+    file_name VARCHAR(500),
+	status VARCHAR(100),
+	stream_name VARCHAR(250),
+	error_message VARCHAR,
+	created_at TIMESTAMPTZ NOT NULL default current_timestamp,
+    updated_at TIMESTAMP
+);
