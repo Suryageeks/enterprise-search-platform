@@ -1,20 +1,3 @@
 {
-  "java.compile.nullAnalysis.mode": "automatic",
-  "java.configuration.updateBuildConfiguration": "automatic",
-  "java.import.maven.enabled": true,
-  "java.import.gradle.enabled": false,
-  "java.project.importOnFirstTimeStartup": "automatic",
-  "java.project.sourcePaths": [
-    "apps/auth/src/main/java",
-    "apps/auth/src/test/java",
-    "apps/document/src/main/java",
-    "apps/document/src/test/java"
-  ],
-  "java.project.outputPath": "out",
-  "java.sources.organizeImports.starThreshold": 999,
-  "java.sources.organizeImports.staticStarThreshold": 999,
-  "java.completion.importOrder": ["java", "jakarta", "org", "com"],
-  "editor.codeActionsOnSave": {
-    "source.organizeImports": "explicit"
-  }
+    "java.configuration.updateBuildConfiguration": "automatic"
 }

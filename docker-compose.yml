@@ -55,7 +55,7 @@ services:
     image: krakend:latest
     container_name: krakend
     ports:
-      - "8080:8080"
+      - "9080:8080"
     volumes:
       - ./apps/gateway/krakend.json:/etc/krakend/krakend.json
       - ./apps/gateway/jwk.json:/etc/krakend/jwk.json

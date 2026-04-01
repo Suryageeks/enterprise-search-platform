@@ -1,34 +1,24 @@
 {
-  "configurations": [
-    {
-      "type": "java",
-      "name": "Spring Boot-SearchApplication<search>",
-      "request": "launch",
-      "cwd": "${workspaceFolder}",
-      "mainClass": "com.enterprise.search.SearchApplication",
-      "projectName": "search",
-      "args": "",
-      "envFile": "${workspaceFolder}/.env"
-    },
-    {
-      "type": "java",
-      "name": "Spring Boot-AuthApplication<auth>",
-      "request": "launch",
-      "cwd": "${workspaceFolder}",
-      "mainClass": "com.enterprise.auth.AuthApplication",
-      "projectName": "auth",
-      "args": "",
-      "envFile": "${workspaceFolder}/.env"
-    },
-    {
-      "type": "java",
-      "name": "Spring Boot-DocumentApplication<document>",
-      "request": "launch",
-      "cwd": "${workspaceFolder}",
-      "mainClass": "com.enterprise.document.Application",
-      "projectName": "document",
-      "args": "",
-      "envFile": "${workspaceFolder}/.env"
-    }
-  ]
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-AuthApplication<auth>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.enterprise.auth.AuthApplication",
+            "projectName": "auth",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-Application<document>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.enterprise.document.Application",
+            "projectName": "document",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
 }
