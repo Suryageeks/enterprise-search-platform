@@ -1,5 +1,6 @@
 package com.enterprise.document.services;
 
+import java.io.InputStream;
 import java.net.URL;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -9,19 +10,21 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.stream.MapRecord;
+import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.enterprise.document.config.S3Properties;
-import com.enterprise.document.dto.response.DocumentResponse;
+import com.enterprise.document.dto.response.IngestionUploadResponse;
 import com.enterprise.document.entity.Document;
 import com.enterprise.document.entity.IngestionJob;
 import com.enterprise.document.exception.DocumentNotFoundException;
 import com.enterprise.document.exception.FileStorageException;
 import com.enterprise.document.repository.DocumentRepository;
 import com.enterprise.document.repository.IngestionJobRepository;
+import com.enterprise.document.util.fileStatus;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,57 +44,76 @@ public class DocumentService {
     private final S3Presigner s3Presigner;
     private final S3Properties s3Properties;
     private final DocumentRepository documentRepository;
-    private final IngestionJobRepository ingestionJobService;
+    private final IngestionJobRepository ingestionJobRepository;
     private final StringRedisTemplate redisTemplate;
 
-    @Value("app.redis.stream.ingestion-stream")
+    @Value("${app.redis.stream.ingestion-stream}")
     private String ingestionStreamName;
 
-    public DocumentResponse uploadFile(String empId, String uploadType, MultipartFile file){
-        try {
-            String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
-            UUID docId = UUID.randomUUID();
-            UUID jobId = UUID.randomUUID();
-            String key = buildS3Key(empId, docId, originalFileName) ;
+    public IngestionUploadResponse uploadFile(String empId, String uploadType, MultipartFile file){
+        String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
+        UUID docId = UUID.randomUUID();
+        UUID jobId = UUID.randomUUID();
+        String key = buildS3Key(empId, docId, originalFileName);
 
+        try (InputStream inputStream = file.getInputStream()) {
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                                                .bucket(s3Properties.getBucketName())
-                                                .key(key)
-                                                .contentType(file.getContentType())
-                                                .contentLength(file.getSize())
-                                                .build();
+                                            .bucket(s3Properties.getBucketName())
+                                            .key(key)
+                                            .contentType(file.getContentType())
+                                            .contentLength(file.getSize())
+                                            .build();
 
-            s3Client.putObject(putObjectRequest,RequestBody.fromBytes(file.getBytes()));
+            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, file.getSize()));
+            log.info("File {} uploaded to S3 with key {}", originalFileName, key);
 
-            Document document = Document.builder()
-                                .empId(empId)
-                                .docId(docId)
-                                .uploadType(uploadType)
-                                .fileName(originalFileName)
-                                .fileSize(file.getSize())
-                                .fileStatus("QUEUED")
-                                .filePath(key)
-                                .updatedAt(LocalDateTime.now())
-                                .build();
-            
-            IngestionJob ingestionJob = IngestionJob.builder()
-                                        .jobId(jobId)
-                                        .empId(empId)
-                                        .docId(docId)
-                                        .fileName(originalFileName)
-                                        .status("QUEUED")
-                                        .streamName(ingestionStreamName)
+            Document savedDocument = documentRepository.save(Document.builder()
+                                            .empId(empId)
+                                            .docId(docId)
+                                            .uploadType(uploadType)
+                                            .fileName(originalFileName)
+                                            .fileSize(file.getSize())
+                                            .fileStatus(fileStatus.QUEUED.name())
+                                            .filePath(key)
+                                            .updatedAt(LocalDateTime.now())
+                                            .build());
+
+            IngestionJob savedIngestionJob = ingestionJobRepository.save(IngestionJob.builder()
+                                            .jobId(jobId)
+                                            .empId(empId)
+                                            .docId(docId)
+                                            .fileName(originalFileName)
+                                            .status(fileStatus.QUEUED.name())
+                                            .streamName(ingestionStreamName)
+                                            .build());
+
+            try {
+                RecordId recordId = publishToIngestionStream(savedIngestionJob, savedDocument);
+                log.info(
+                    "Document {} with jobId {} queued for ingestion as Redis record {}",
+                    savedDocument.getDocId(),
+                    savedIngestionJob.getJobId(),
+                    recordId.getValue()
+                );
+            } catch (Exception redisException) {
+                markQueueFailure(savedDocument, savedIngestionJob, redisException);
+                throw redisException;
+            }
+
+            log.info("File upload and ingestion job creation successful for jobId {}", savedIngestionJob.getJobId());
+
+            return IngestionUploadResponse.builder()
+                                        .jobId(savedIngestionJob.getJobId())
+                                        .docId(savedDocument.getDocId())
+                                        .status(savedIngestionJob.getStatus())
+                                        .fileName(savedDocument.getFileName())
+                                        .receivedAt(savedIngestionJob.getCreatedAt() != null
+                                            ? savedIngestionJob.getCreatedAt()
+                                            : OffsetDateTime.now())
                                         .build();
 
-            Document saveDocument = documentRepository.save(document);
-            IngestionJob saveIngestionJob = ingestionJobService.save(ingestionJob);
-
-            publishToIngestionStream(saveIngestionJob, saveDocument);
-            
-            return mapToResponse(saveDocument);
-
         } catch (Exception e) {
-            throw new FileStorageException("Failed to upload file to s3", e);
+            throw new FileStorageException("Failed to upload file and queue ingestion job", e);
         }
     }
 
@@ -119,21 +141,7 @@ public class DocumentService {
         return s3Properties.getBaseDir() + "/" + empId + "/" + docId + "/" + fileName;
     }
 
-    private DocumentResponse mapToResponse(Document document) {
-        return DocumentResponse.builder()
-            .id(document.getId())
-            .empId(document.getEmpId())
-            .docId(document.getDocId())
-            .uploadType(document.getUploadType())
-            .fileStatus(document.getFileStatus())
-            .fileName(document.getFileName())
-            .fileSize(document.getFileSize())
-            .filePath(document.getFilePath())
-            .createdAt(document.getCreatedAt())
-            .build();
-    }
-
-    private void publishToIngestionStream(IngestionJob ingestionJob, Document document) {
+    private RecordId publishToIngestionStream(IngestionJob ingestionJob, Document document) {
         Map<String, String> payload = Map.of(
             "jobId", ingestionJob.getJobId().toString(),
             "docId", document.getDocId().toString(),
@@ -144,8 +152,23 @@ public class DocumentService {
             "queuedAt", OffsetDateTime.now().toString()
         );
 
-        redisTemplate.opsForStream().add(MapRecord.create(ingestionStreamName, payload));
+        RecordId recordId = redisTemplate.opsForStream().add(MapRecord.create(ingestionStreamName, payload));
+        if (recordId == null) {
+            throw new IllegalStateException("Redis stream publish returned null record id");
+        }
 
         log.info("Published ingestion job {} to Redis stream {}", ingestionJob.getJobId(), ingestionStreamName);
+        return recordId;
+    }
+
+    private void markQueueFailure(Document document, IngestionJob ingestionJob, Exception redisException) {
+        document.setFileStatus(fileStatus.QUEUE_FAILED.name());
+        ingestionJob.setStatus(fileStatus.QUEUE_FAILED.name());
+        ingestionJob.setErrorMessage(redisException.getMessage());
+
+        documentRepository.save(document);
+        ingestionJobRepository.save(ingestionJob);
+
+        log.error("Failed to queue ingestion job {} to Redis", ingestionJob.getJobId(), redisException);
     }
 }
