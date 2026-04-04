@@ -1,0 +1,33 @@
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    app_name: str = "worker-service"
+    env: str = "dev"
+    host: str = "0.0.0.0"
+    port: int = 8090
+
+    redis_url: str 
+    redis_stream_name: str
+    redis_consumer_group: str 
+    redis_consumer_name: str
+
+    aws_region: str
+    aws_endpoint_url: str 
+    aws_access_key_id: str 
+    aws_secret_access_key: str 
+    aws_bucket_name: str 
+
+    postgres_dsn: str 
+    qdrant_url: str 
+    qdrant_collection_name: str 
+    embedding_model: str 
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+
+settings = Settings()  # type: ignore[call-arg]

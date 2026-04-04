@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+redis
+boto3
+qdrant-client
+psycopg[binary]
+httpx
+asyncpg
+sqlalchemy
+python-dotenv
