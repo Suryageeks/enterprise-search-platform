@@ -4,7 +4,6 @@ from http import client
 import logging
 
 from app.clients.redis_client import redis_client
-from app.consumers import redis_consumer
 from app.core.config import settings
 from app.db.models import IngestionJob
 from app.schemas.ingestion import IngestionJobMessage
@@ -70,5 +69,5 @@ class RedisConsumer:
         except Exception:
             logger.exception("Error processing message %s: %s", msg_id, payload)
 
-redis_consumer = RedisConsumer()
+redis_consumer = RedisConsumer
                         
