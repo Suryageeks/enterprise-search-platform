@@ -1,3 +1,8 @@
 {
-    "java.configuration.updateBuildConfiguration": "automatic"
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.compile.nullAnalysis.mode": "automatic",
+    "python.defaultInterpreterPath": "/root/enterprise-search-platform/apps/worker-service/venv/bin/python",
+    "python.analysis.extraPaths": [
+        "/root/enterprise-search-platform/apps/worker-service"
+    ]
 }

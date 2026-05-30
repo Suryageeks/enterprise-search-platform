@@ -10,3 +10,13 @@ httpx
 asyncpg
 sqlalchemy
 python-dotenv
+langchain
+langgraph
+langchain-qdrant
+langchain-openai
+langchain-redis
+langchain-text-splitters
+qdrant-client
+transformers
+torch
+tokenizers

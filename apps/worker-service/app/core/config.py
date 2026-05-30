@@ -18,10 +18,15 @@ class Settings(BaseSettings):
     aws_secret_access_key: str 
     aws_bucket_name: str 
 
-    postgres_dsn: str 
-    qdrant_url: str 
-    qdrant_collection_name: str 
-    embedding_model: str 
+    postgres_dsn: str
+    qdrant_url: str
+    qdrant_collection_name: str
+    qdrant_collection_alias: str = "documents"
+    qdrant_vector_distance: str = "cosine"
+
+    embedding_model: str = "bert-base-uncased"
+    embedding_batch_size: int = 32
+    embedding_device: str = "cpu"
 
     model_config = SettingsConfigDict(
         env_file=".env",

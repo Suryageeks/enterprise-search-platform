@@ -1,0 +1,1673 @@
+{
+  "version": "1.0.0",
+  "producer": "Java AppCAT CLI",
+  "metadata": {
+    "analysisStartTime": "2026-03-31T18:39:53.903Z",
+    "analysisEndTime": "2026-03-31T18:40:55.378Z",
+    "privacyMode": "Protected",
+    "privacyModeHelpUrl": "https://aka.ms/appmod-privacy-mode",
+    "targetIds": [
+      "azure-appservice",
+      "azure-aks",
+      "azure-container-apps"
+    ],
+    "targetDisplayNames": [
+      "Azure App Service",
+      "Azure Kubernetes Service",
+      "Azure Container Apps"
+    ],
+    "capabilities": [
+      "openjdk21"
+    ],
+    "os": [
+      "linux",
+      "windows"
+    ],
+    "id": "1774982393901",
+    "name": "Report_202603311839",
+    "status": "completed",
+    "domains": [
+      "java-upgrade",
+      "cloud-readiness"
+    ],
+    "mode": "issue-only"
+  },
+  "summary": {
+    "totalProjects": 1,
+    "totalIssues": 14,
+    "totalIncidents": 46,
+    "totalEffort": 243,
+    "charts": {
+      "severity": {
+        "mandatory": 26,
+        "optional": 3,
+        "potential": 17,
+        "information": 0
+      },
+      "category": {
+        "cache-service-migration": 4,
+        "database-migration": 5,
+        "local-credential": 3,
+        "local-resource-access": 3,
+        "remote-communication": 6,
+        "spring-migration": 6,
+        "storage-migration": 19
+      }
+    }
+  },
+  "projects": [
+    {
+      "path": ".",
+      "issues": 14,
+      "storyPoints": 243,
+      "properties": {
+        "appName": "enterprise-search-platform",
+        "jdkVersion": "21",
+        "frameworks": [
+          "Spring Boot",
+          "Spring"
+        ],
+        "languages": [
+          "Java"
+        ],
+        "tools": [
+          "Maven"
+        ]
+      },
+      "incidents": [
+        {
+          "ruleId": "spring-boot-to-azure-restricted-config-01000",
+          "incidentId": "8aab4931-65e9-4bd2-a007-80bb41feb01e",
+          "location": "apps/document/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 1,
+          "column": 0,
+          "targets": {
+            "azure-container-apps": {
+              "effort": 2,
+              "severity": "potential"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "spring-boot-to-azure-restricted-config-01000",
+          "incidentId": "39601ad9-6980-47f7-b2ab-5373fa63bd33",
+          "location": "apps/document/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 2,
+          "column": 0,
+          "targets": {
+            "azure-container-apps": {
+              "effort": 2,
+              "severity": "potential"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "spring-boot-to-azure-restricted-config-01000",
+          "incidentId": "8847b530-cb7a-4afc-90b8-a052ca1e7d05",
+          "location": "apps/auth/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 1,
+          "column": 0,
+          "targets": {
+            "azure-container-apps": {
+              "effort": 2,
+              "severity": "potential"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "spring-boot-to-azure-restricted-config-01000",
+          "incidentId": "6ce647d1-0d67-4bc2-9685-eba940e4abdd",
+          "location": "apps/auth/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 2,
+          "column": 0,
+          "targets": {
+            "azure-container-apps": {
+              "effort": 2,
+              "severity": "potential"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-database-postgresql-02000",
+          "incidentId": "72988d13-8432-43c0-b92b-839e494546aa",
+          "location": "apps/auth/pom.xml",
+          "locationKind": "File",
+          "line": 63,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 5,
+              "severity": "potential"
+            },
+            "azure-appservice": {
+              "effort": 5,
+              "severity": "potential"
+            },
+            "azure-container-apps": {
+              "effort": 5,
+              "severity": "potential"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-database-postgresql-02000",
+          "incidentId": "a4a63bd1-a775-4599-8e38-de71930986f7",
+          "location": "apps/document/pom.xml",
+          "locationKind": "File",
+          "line": 59,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 5,
+              "severity": "potential"
+            },
+            "azure-appservice": {
+              "effort": 5,
+              "severity": "potential"
+            },
+            "azure-container-apps": {
+              "effort": 5,
+              "severity": "potential"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-database-postgresql-02000",
+          "incidentId": "003b22a3-c572-405b-8a69-0ef1babd5d72",
+          "location": "apps/auth/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 6,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 5,
+              "severity": "potential"
+            },
+            "azure-appservice": {
+              "effort": 5,
+              "severity": "potential"
+            },
+            "azure-container-apps": {
+              "effort": 5,
+              "severity": "potential"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-database-postgresql-02000",
+          "incidentId": "7754974c-4e5a-4aad-a880-a1724392f09c",
+          "location": "apps/document/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 6,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 5,
+              "severity": "potential"
+            },
+            "azure-appservice": {
+              "effort": 5,
+              "severity": "potential"
+            },
+            "azure-container-apps": {
+              "effort": 5,
+              "severity": "potential"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-database-postgresql-02000",
+          "incidentId": "c7d0f71e-4f57-4a2b-b408-cec1ac273db7",
+          "location": "",
+          "locationKind": "",
+          "targets": {
+            "azure-aks": {
+              "effort": 5,
+              "severity": "potential"
+            },
+            "azure-appservice": {
+              "effort": 5,
+              "severity": "potential"
+            },
+            "azure-container-apps": {
+              "effort": 5,
+              "severity": "potential"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-password-01000",
+          "incidentId": "844b7039-3902-4131-b712-46bce4a0b520",
+          "location": "apps/document/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 8,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "potential"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "potential"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "potential"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-password-01000",
+          "incidentId": "42fb8262-940b-4183-9910-17b16f921def",
+          "location": "apps/document/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 45,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "potential"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "potential"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "potential"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-password-01000",
+          "incidentId": "4c7a66a9-41ae-4128-8bc0-f3c2df12c916",
+          "location": "apps/auth/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 8,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "potential"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "potential"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "potential"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-cache-redis-01000",
+          "incidentId": "18e07e24-b8b9-4a54-89b9-d34ccc83ba4d",
+          "location": "apps/document/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 43,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 5,
+              "severity": "potential"
+            },
+            "azure-appservice": {
+              "effort": 5,
+              "severity": "potential"
+            },
+            "azure-container-apps": {
+              "effort": 5,
+              "severity": "potential"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-cache-redis-01000",
+          "incidentId": "daf5d7fa-4d92-4c15-ae4c-4c63933ded20",
+          "location": "apps/document/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 45,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 5,
+              "severity": "potential"
+            },
+            "azure-appservice": {
+              "effort": 5,
+              "severity": "potential"
+            },
+            "azure-container-apps": {
+              "effort": 5,
+              "severity": "potential"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-cache-redis-01000",
+          "incidentId": "ca327f4d-9c84-4d60-9cb8-f9a58f223dba",
+          "location": "",
+          "locationKind": "",
+          "targets": {
+            "azure-aks": {
+              "effort": 5,
+              "severity": "potential"
+            },
+            "azure-appservice": {
+              "effort": 5,
+              "severity": "potential"
+            },
+            "azure-container-apps": {
+              "effort": 5,
+              "severity": "potential"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-aws-config-s3-03001",
+          "incidentId": "a6056c15-929c-4b23-879b-4d745cf18111",
+          "location": "apps/document/pom.xml",
+          "locationKind": "File",
+          "line": 89,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 8,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-aws-config-s3-03002",
+          "incidentId": "9f121a32-48eb-4924-8bc5-b50782254da0",
+          "location": "apps/document/src/main/java/com/enterprise/document/config/S3Config.java",
+          "locationKind": "File",
+          "line": 14,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 8,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-aws-config-s3-03002",
+          "incidentId": "a0641fc8-2b35-4194-9288-caae5ec51f0f",
+          "location": "apps/document/src/main/java/com/enterprise/document/services/DocumentService.java",
+          "locationKind": "File",
+          "line": 25,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 8,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-aws-config-s3-03002",
+          "incidentId": "9749a6f5-f525-4db1-91bc-75cc6ae9c609",
+          "location": "apps/document/src/main/java/com/enterprise/document/services/DocumentService.java",
+          "locationKind": "File",
+          "line": 26,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 8,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-aws-config-s3-03000",
+          "incidentId": "11064494-3662-40d1-8f45-b25951d0fe68",
+          "location": "apps/document/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 29,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 8,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-aws-config-s3-03000",
+          "incidentId": "27fcaf31-3bbe-4326-b42a-4bab659d6ad6",
+          "location": "apps/document/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 30,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 8,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-aws-config-s3-03000",
+          "incidentId": "32fa23ea-cb4f-4293-85e4-c93a760202d7",
+          "location": "apps/document/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 31,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 8,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-aws-config-s3-03000",
+          "incidentId": "3e98f105-c2ac-4dc6-8fb9-6c0ec7de0306",
+          "location": "apps/document/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 32,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 8,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-aws-config-s3-03000",
+          "incidentId": "5e882392-72ad-480e-9a1e-6bd826ec08ac",
+          "location": "apps/document/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 33,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 8,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-aws-config-s3-03000",
+          "incidentId": "1f17d87b-c308-47a3-8ca1-d213793858b5",
+          "location": "apps/document/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 34,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 8,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-aws-config-s3-03000",
+          "incidentId": "84e20159-cadb-489e-b650-3a57c3ab57af",
+          "location": "apps/document/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 35,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 8,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-aws-config-s3-03000",
+          "incidentId": "e9e327b4-34aa-4c5f-be93-5d6cfc9233f9",
+          "location": "apps/document/src/main/java/com/enterprise/document/config/S3Config.java",
+          "locationKind": "File",
+          "line": 14,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 8,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-aws-config-s3-03000",
+          "incidentId": "fe6eb2f2-9c88-4397-ba26-c8868883c7f4",
+          "location": "apps/document/src/main/java/com/enterprise/document/config/S3Config.java",
+          "locationKind": "File",
+          "line": 12,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 8,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-aws-config-s3-03000",
+          "incidentId": "02f11dee-3f3a-4d2f-bf81-783c5eda1c10",
+          "location": "apps/document/src/main/java/com/enterprise/document/config/S3Config.java",
+          "locationKind": "File",
+          "line": 13,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 8,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-aws-config-s3-03000",
+          "incidentId": "347b362c-efac-4d49-a6eb-07c88210a533",
+          "location": "apps/document/src/main/java/com/enterprise/document/services/DocumentService.java",
+          "locationKind": "File",
+          "line": 24,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 8,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-aws-config-s3-03000",
+          "incidentId": "c3a08f57-c42e-4b64-84bd-86ccca06ad7c",
+          "location": "apps/document/src/main/java/com/enterprise/document/services/DocumentService.java",
+          "locationKind": "File",
+          "line": 22,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 8,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-aws-config-s3-03000",
+          "incidentId": "ba842988-b350-4de2-8519-b4fbcd4e051d",
+          "location": "apps/document/src/main/java/com/enterprise/document/services/DocumentService.java",
+          "locationKind": "File",
+          "line": 26,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 8,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-aws-config-s3-03000",
+          "incidentId": "adeabddc-067b-4f18-870e-e8f429813856",
+          "location": "apps/document/src/main/java/com/enterprise/document/services/DocumentService.java",
+          "locationKind": "File",
+          "line": 23,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 8,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "azure-aws-config-s3-03000",
+          "incidentId": "ac920ea4-c9bf-4c76-b443-6a592b38e93b",
+          "location": "apps/document/src/main/java/com/enterprise/document/services/DocumentService.java",
+          "locationKind": "File",
+          "line": 25,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 8,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 8,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "spring-boot-to-azure-port-01000",
+          "incidentId": "ceae93e6-e888-4356-919f-2928660d829e",
+          "location": "apps/document/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 2,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 1,
+              "severity": "potential"
+            },
+            "azure-appservice": {
+              "effort": 1,
+              "severity": "potential"
+            },
+            "azure-container-apps": {
+              "effort": 1,
+              "severity": "potential"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "spring-boot-to-azure-port-01000",
+          "incidentId": "c90287b8-adf1-4a70-b0ea-e1f2ca192268",
+          "location": "apps/auth/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 2,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 1,
+              "severity": "potential"
+            },
+            "azure-appservice": {
+              "effort": 1,
+              "severity": "potential"
+            },
+            "azure-container-apps": {
+              "effort": 1,
+              "severity": "potential"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=azure/springboot"
+          ]
+        },
+        {
+          "ruleId": "embedded-cache-16000",
+          "incidentId": "696d9f46-2c47-4a77-a68b-737618f675f1",
+          "location": "apps/document/pom.xml",
+          "locationKind": "File",
+          "line": 95,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 5,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 5,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 5,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=cloud-readiness"
+          ]
+        },
+        {
+          "ruleId": "localhost-http-00001",
+          "incidentId": "f512b3f7-6ed7-418a-8ec4-ff98939a2ced",
+          "location": "apps/document/src/main/java/com/enterprise/document/config/S3Properties.java",
+          "locationKind": "File",
+          "line": 9,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=cloud-readiness"
+          ]
+        },
+        {
+          "ruleId": "localhost-http-00001",
+          "incidentId": "4e47ed32-0c7d-49aa-964e-9a9938cbf8cf",
+          "location": "apps/document/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 30,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=cloud-readiness"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-urls-00001",
+          "incidentId": "c8c062cd-3950-4c64-a4f2-3320145fba1a",
+          "location": "apps/document/src/main/java/com/enterprise/document/config/S3Properties.java",
+          "locationKind": "File",
+          "line": 9,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "optional"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "optional"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "optional"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=cloud-readiness"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-urls-00001",
+          "incidentId": "95623589-9737-43c0-9dff-f52fb3fab7b1",
+          "location": "apps/document/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 30,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "optional"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "optional"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "optional"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=cloud-readiness"
+          ]
+        },
+        {
+          "ruleId": "unsecure-network-protocol-00000",
+          "incidentId": "76483fc4-b9d9-43c2-8d82-09a42df83aa3",
+          "location": "apps/document/src/main/java/com/enterprise/document/config/S3Properties.java",
+          "locationKind": "File",
+          "line": 9,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=cloud-readiness"
+          ]
+        },
+        {
+          "ruleId": "unsecure-network-protocol-00000",
+          "incidentId": "30ecc4b4-e994-4337-a59f-71cd218688d7",
+          "location": "apps/document/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 30,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=cloud-readiness"
+          ]
+        },
+        {
+          "ruleId": "localhost-00004",
+          "incidentId": "2ffb582e-bb7f-4245-b314-13addc241f8e",
+          "location": "apps/document/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 43,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "optional"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "optional"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "optional"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=cloud-readiness"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "66475d0e-71b9-46ea-8331-74af01b59f6a",
+          "location": "apps/auth/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 3,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "eff83aad-ec83-43f0-b04b-7847414bc97d",
+          "location": "apps/document/src/main/resources/application.properties",
+          "locationKind": "File",
+          "line": 3,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "azure-aws-config-s3-03000": {
+      "id": "azure-aws-config-s3-03000",
+      "description": "The application contains AWS S3 usage. Consider using Azure Blob Storage instead.\n\n * Provision **Azure Blob Storage**: Create an Azure Blob Storage account in the Azure portal. Choose the appropriate storage tier (Hot, Cool, or Archive) based on your application's data access patterns and cost considerations.\n\n * **Update application code**: Modify the Java application's code to replace AWS SDK calls with the equivalent Azure Storage SDK calls for Azure Blob Storage. Update the code to authenticate and interact with Azure Blob Storage using the Azure SDK for Java.\n\n * **Map S3 functionality** to Azure Blob Storage: Understand the differences between AWS S3 and Azure Blob Storage, and adjust your application logic accordingly. Map S3 concepts (buckets, objects, permissions, etc.) to their Azure Blob Storage equivalents (containers, blobs, shared access signatures, etc.).\n\n * **Migrate data** from S3 to Azure Blob Storage: Plan and execute the migration of your data from AWS S3 to Azure Blob Storage. You can use Azure Storage Data Transfer Tool, AzCopy, or other migration tools to copy the data from S3 buckets to Azure Blob Storage containers.\n\n * Update **access permissions**: Adjust the access permissions and policies in Azure Blob Storage to match your application's requirements. Azure provides various options for controlling access, including shared access signatures (SAS), Azure AD authentication, and role-based access control (RBAC).\n\n * Validate functionality and **performance**: Thoroughly test the updated application to ensure that it can read from and write to Azure Blob Storage correctly. Validate the performance of data transfer and any other operations to ensure they meet your application's requirements.",
+      "title": "AWS S3 usage found",
+      "severity": "mandatory",
+      "effort": 8,
+      "links": [
+        {
+          "url": "https://learn.microsoft.com/azure/storage/blobs",
+          "title": "Azure Blob Storage documentation"
+        },
+        {
+          "url": "https://learn.microsoft.com/azure/storage/blobs/storage-quickstart-blobs-java",
+          "title": "Quickstart: Azure Blob Storage client library for Java"
+        },
+        {
+          "url": "https://azure.microsoft.com/blog/move-your-data-from-aws-s3-to-azure-storage-using-azcopy",
+          "title": "Move your data from AWS S3 to Azure Storage using AzCopy"
+        }
+      ],
+      "labels": [
+        "target=azure-appservice",
+        "target=azure-aks",
+        "target=azure-container-apps",
+        "source",
+        "domain=cloud-readiness",
+        "category=storage-migration",
+        "AWS",
+        "storage",
+        "os=windows",
+        "os=linux"
+      ]
+    },
+    "azure-aws-config-s3-03001": {
+      "id": "azure-aws-config-s3-03001",
+      "description": "The application contains AWS S3 dependency usage. Consider using Azure Blob Storage instead.\n\n * Provision **Azure Blob Storage**: Create an Azure Blob Storage account in the Azure portal. Choose the appropriate storage tier (Hot, Cool, or Archive) based on your application's data access patterns and cost considerations.\n\n * **Update application code**: Modify the Java application's code to replace AWS SDK calls with the equivalent Azure Storage SDK calls for Azure Blob Storage. Update the code to authenticate and interact with Azure Blob Storage using the Azure SDK for Java.\n\n * **Map S3 functionality** to Azure Blob Storage: Understand the differences between AWS S3 and Azure Blob Storage, and adjust your application logic accordingly. Map S3 concepts (buckets, objects, permissions, etc.) to their Azure Blob Storage equivalents (containers, blobs, shared access signatures, etc.).\n\n * **Migrate data** from S3 to Azure Blob Storage: Plan and execute the migration of your data from AWS S3 to Azure Blob Storage. You can use Azure Storage Data Transfer Tool, AzCopy, or other migration tools to copy the data from S3 buckets to Azure Blob Storage containers.\n\n * Update **access permissions**: Adjust the access permissions and policies in Azure Blob Storage to match your application's requirements. Azure provides various options for controlling access, including shared access signatures (SAS), Azure AD authentication, and role-based access control (RBAC).\n\n * Validate functionality and **performance**: Thoroughly test the updated application to ensure that it can read from and write to Azure Blob Storage correctly. Validate the performance of data transfer and any other operations to ensure they meet your application's requirements.",
+      "title": "AWS S3 dependency usage found",
+      "severity": "mandatory",
+      "effort": 8,
+      "links": [
+        {
+          "url": "https://learn.microsoft.com/azure/storage/blobs",
+          "title": "Azure Blob Storage documentation"
+        },
+        {
+          "url": "https://learn.microsoft.com/azure/storage/blobs/storage-quickstart-blobs-java",
+          "title": "Quickstart: Azure Blob Storage client library for Java"
+        },
+        {
+          "url": "https://azure.microsoft.com/blog/move-your-data-from-aws-s3-to-azure-storage-using-azcopy",
+          "title": "Move your data from AWS S3 to Azure Storage using AzCopy"
+        }
+      ],
+      "labels": [
+        "target=azure-appservice",
+        "target=azure-aks",
+        "target=azure-container-apps",
+        "source",
+        "domain=cloud-readiness",
+        "category=storage-migration",
+        "AWS",
+        "storage",
+        "os=windows",
+        "os=linux"
+      ]
+    },
+    "azure-aws-config-s3-03002": {
+      "id": "azure-aws-config-s3-03002",
+      "description": "The application contains AWS S3 storage operations. Consider using Azure Blob Storage instead.\n\n * Provision **Azure Blob Storage**: Create an Azure Blob Storage account in the Azure portal. Choose the appropriate storage tier (Hot, Cool, or Archive) based on your application's data access patterns and cost considerations.\n\n * **Update application code**: Modify the Java application's code to replace AWS SDK calls with the equivalent Azure Storage SDK calls for Azure Blob Storage. Update the code to authenticate and interact with Azure Blob Storage using the Azure SDK for Java.\n\n * **Map S3 functionality** to Azure Blob Storage: Understand the differences between AWS S3 and Azure Blob Storage, and adjust your application logic accordingly. Map S3 concepts (buckets, objects, permissions, etc.) to their Azure Blob Storage equivalents (containers, blobs, shared access signatures, etc.).\n\n * **Migrate data** from S3 to Azure Blob Storage: Plan and execute the migration of your data from AWS S3 to Azure Blob Storage. You can use Azure Storage Data Transfer Tool, AzCopy, or other migration tools to copy the data from S3 buckets to Azure Blob Storage containers.\n\n * Update **access permissions**: Adjust the access permissions and policies in Azure Blob Storage to match your application's requirements. Azure provides various options for controlling access, including shared access signatures (SAS), Azure AD authentication, and role-based access control (RBAC).\n\n * Validate functionality and **performance**: Thoroughly test the updated application to ensure that it can read from and write to Azure Blob Storage correctly. Validate the performance of data transfer and any other operations to ensure they meet your application's requirements.",
+      "title": "AWS S3 operations found",
+      "severity": "mandatory",
+      "effort": 8,
+      "links": [
+        {
+          "url": "https://learn.microsoft.com/azure/storage/blobs",
+          "title": "Azure Blob Storage documentation"
+        },
+        {
+          "url": "https://learn.microsoft.com/azure/storage/blobs/storage-quickstart-blobs-java",
+          "title": "Quickstart: Azure Blob Storage client library for Java"
+        },
+        {
+          "url": "https://azure.microsoft.com/blog/move-your-data-from-aws-s3-to-azure-storage-using-azcopy",
+          "title": "Move your data from AWS S3 to Azure Storage using AzCopy"
+        }
+      ],
+      "labels": [
+        "target=azure-appservice",
+        "target=azure-aks",
+        "target=azure-container-apps",
+        "source",
+        "domain=cloud-readiness",
+        "category=storage-migration",
+        "AWS",
+        "storage",
+        "os=windows",
+        "os=linux"
+      ]
+    },
+    "azure-cache-redis-01000": {
+      "id": "azure-cache-redis-01000",
+      "description": "Redis Cache connection string, username, or password used in this application. To migrate a Java application that uses a Redis Cache connection string to Azure, you can follow these recommendations:\n\n* **Provision an Azure Cache for Redis**: Checkout Azure Cache for Redis for a fully managed cache on Azure. You can take advantage of a managed Redis service that offers scalability, high availability, and monitoring capabilities. **Azure Cache for Redis** provides features like data persistence, automatic failover, and built-in support for Redis commands, allowing you to leverage the benefits of Redis caching in your application running on Azure. Configure the cache size and other relevant settings based on your application's requirements.\n\n* **Update your Java code**: Replace the embedded Redis cache code in your Java application with the Azure Cache for Redis client libraries or SDKs. Update the code that establishes a connection to the Redis cache and performs cache-related operations.\n\n* **Connect to Azure Cache for Redis**: Connect your app to Azure Cache for Redis on azure by **Service Connector**. Instead of manually configuring connection string in your applications, you can automatically connect Azure Cache for Redis to your applications. ",
+      "title": "Redis Cache connection string found",
+      "severity": "potential",
+      "effort": 5,
+      "links": [
+        {
+          "url": "https://learn.microsoft.com/azure/container-apps/services",
+          "title": "Connect Azure Cache for Redis to your application in Azure Container Apps"
+        },
+        {
+          "url": "https://learn.microsoft.com/azure/service-connector/quickstart-portal-container-apps",
+          "title": "Create a service connection in Azure Container Apps from the Azure portal"
+        },
+        {
+          "url": "https://learn.microsoft.com/azure/azure-cache-for-redis",
+          "title": "Azure Cache for Redis documentation"
+        },
+        {
+          "url": "https://learn.microsoft.com/azure/architecture/best-practices/caching",
+          "title": "Caching guidance"
+        },
+        {
+          "url": "https://learn.microsoft.com/azure/redis/java-get-started?tabs=entraid&pivots=azure-cache-redis",
+          "title": "Use Azure Cache for Redis in Java with Jedis Redis client"
+        }
+      ],
+      "labels": [
+        "target=azure-appservice",
+        "target=azure-aks",
+        "target=azure-container-apps",
+        "source",
+        "domain=cloud-readiness",
+        "category=cache-service-migration",
+        "cache",
+        "redis",
+        "os=windows",
+        "os=linux"
+      ]
+    },
+    "azure-database-postgresql-02000": {
+      "id": "azure-database-postgresql-02000",
+      "description": "To migrate a Java application that uses a PostgreSQL database to Azure, you can follow these recommendations:\n\n * Use a managed **Azure Database for PostgreSQL Flexible Server**: For that create a managed PostgreSQL Flexible Server database in Azure and choose the appropriate pricing tier based on your application's requirements for performance, storage, and availability.\n\n * **Migrate** the existing PostgreSQL database: For that you can use the Azure Database Migration Service (DMS) to perform an online migration with minimal downtime.\n\n * Update the application's **database connection** details: Modify the Java application's configuration to point to the newly provisioned Azure Database for PostgreSQL. Update the connection string, hostname, port, username, and password information accordingly.\n\n * Enable **monitoring and diagnostics**: Utilize Azure Monitor to gain insights into the performance and health of your Java application and the underlying PostgreSQL database. Set up metrics, alerts, and log analytics to proactively identify and resolve issues.\n\n * Implement **security** measures: Apply security best practices to protect your Java application and the PostgreSQL database. This includes implementing authentication and authorization mechanisms with passwordless connections and leveraging Microsoft Defender for Cloud for threat detection and vulnerability assessments.\n\n * **Backup** your data: Azure Database for PostgreSQL provides automated backups by default. You can configure the retention period for backups based on your requirements. You can also enable geo-redundant backups, if needed, to enhance data durability and availability.",
+      "title": "PostgreSQL database found",
+      "severity": "potential",
+      "effort": 5,
+      "links": [
+        {
+          "url": "https://learn.microsoft.com/azure/postgresql/flexible-server",
+          "title": "Azure PostgreSQL Flexible Server documentation"
+        },
+        {
+          "url": "https://learn.microsoft.com/azure/dms",
+          "title": "Azure Database Migration Service documentation"
+        },
+        {
+          "url": "https://learn.microsoft.com/azure/azure-monitor",
+          "title": "Azure Monitor documentation"
+        },
+        {
+          "url": "https://learn.microsoft.com/azure/defender-for-cloud",
+          "title": "Microsoft Defender for Cloud"
+        },
+        {
+          "url": "https://learn.microsoft.com/azure/postgresql/single-server/concepts-backup",
+          "title": "Backup and restore in Azure Database for PostgreSQL"
+        }
+      ],
+      "labels": [
+        "target=azure-appservice",
+        "target=azure-aks",
+        "target=azure-container-apps",
+        "source",
+        "domain=cloud-readiness",
+        "category=database-migration",
+        "database",
+        "postgresql",
+        "os=windows",
+        "os=linux"
+      ]
+    },
+    "azure-password-01000": {
+      "id": "azure-password-01000",
+      "description": "Using clear passwords in property files is a security risk, as they can be easily compromised if the files are accessed by unauthorized individuals. To enhance the security of your application, it is recommended to employ secure credential management practices.\n\n * **Azure Key Vault**: Utilize Azure Key Vault to securely store and manage your application's passwords and other sensitive credentials. Azure Key Vault provides a centralized and highly secure location for storing secrets, keys, and certificates.\n\n * **Passwordless connections**: You can provide an additional layer of security and convenience for accessing resources in Azure by eliminating the need for passwords. This way you can reduce the risk of password-related vulnerabilities, such as weak passwords or password theft.",
+      "title": "Password found in configuration file",
+      "severity": "potential",
+      "effort": 3,
+      "links": [
+        {
+          "url": "https://learn.microsoft.com/azure/key-vault",
+          "title": "Azure Key Vault documentation"
+        },
+        {
+          "url": "https://learn.microsoft.com/azure/developer/intro/passwordless-overview",
+          "title": "Passwordless connections for Azure services"
+        },
+        {
+          "url": "https://learn.microsoft.com/azure/developer/java/migration/migrate-spring-boot-to-azure-container-apps#inventory-configuration-sources-and-secrets",
+          "title": "Password found in configuration file"
+        },
+        {
+          "url": "https://docs.microsoft.com/azure/developer/java/spring-framework/configure-spring-boot-starter-java-app-with-azure-key-vault",
+          "title": "Read a secret from Azure Key Vault in a Spring Boot application"
+        },
+        {
+          "url": "https://search.maven.org/artifact/com.azure.spring/azure-spring-boot-starter-keyvault-secrets",
+          "title": "Azure Spring Boot Starter for Azure Key Vault Secrets"
+        }
+      ],
+      "labels": [
+        "source",
+        "target=azure-appservice",
+        "target=azure-aks",
+        "target=azure-container-apps",
+        "domain=cloud-readiness",
+        "category=local-credential",
+        "password",
+        "security",
+        "os=windows",
+        "os=linux"
+      ]
+    },
+    "embedded-cache-16000": {
+      "id": "embedded-cache-16000",
+      "description": "The application uses a Redis cache. You can take advantage of a managed Redis service that offers scalability, high availability, and monitoring capabilities. **Azure Cache for Redis** provides features like data persistence, automatic failover, and built-in support for Redis commands, allowing you to leverage the benefits of Redis caching in your application running on Azure.\n\n * **Provision an Azure Cache for Redis**: Configure the cache size and other relevant settings based on your application's requirements.\n\n * **Update your Java code**: Replace the embedded Redis cache code in your Java application with the Azure Cache for Redis client libraries or SDKs. Update the code that establishes a connection to the Redis cache and performs cache-related operations.\n\n * **Connect to Azure Cache for Redis**: Connect your app to Azure Cache for Redis on azure by **Service Connector**. Use the connection information provided by Azure (hostname, port, access keys, etc.) to create a connection from your application.                   \"",
+      "title": "Caching - Redis Cache library",
+      "severity": "mandatory",
+      "effort": 5,
+      "links": [
+        {
+          "url": "https://learn.microsoft.com/azure/azure-cache-for-redis",
+          "title": "Azure Cache for Redis documentation"
+        },
+        {
+          "url": "https://learn.microsoft.com/azure/architecture/best-practices/caching",
+          "title": "Caching guidance"
+        },
+        {
+          "url": "https://learn.microsoft.com/en-us/azure/container-apps/services",
+          "title": "Connect Azure Cache for Redis to your application in Azure Container Apps"
+        },
+        {
+          "url": "https://learn.microsoft.com/en-us/azure/service-connector/quickstart-portal-container-apps",
+          "title": "Create a service connection in Azure Container Apps from the Azure portal"
+        },
+        {
+          "url": "https://learn.microsoft.com/en-us/azure/developer/java/migration/migrate-spring-boot-to-azure-container-apps#identify-external-caches",
+          "title": "Redis Cache found in the application"
+        },
+        {
+          "url": "https://spring.io/projects/spring-data-redis/",
+          "title": "Spring Data Redis"
+        },
+        {
+          "url": "https://search.maven.org/artifact/com.azure.spring/azure-spring-cloud-starter-cache",
+          "title": "Azure Spring Cloud Starter Cache"
+        }
+      ],
+      "labels": [
+        "target=azure-aks",
+        "target=azure-container-apps",
+        "target=azure-appservice",
+        "source",
+        "domain=cloud-readiness",
+        "category=cache-service-migration",
+        "os=windows",
+        "os=linux"
+      ]
+    },
+    "hardcoded-ip-address": {
+      "id": "hardcoded-ip-address",
+      "description": "When migrating environments, hard-coded IP addresses may need to be modified or eliminated.",
+      "title": "Hardcoded IP Address",
+      "severity": "mandatory",
+      "effort": 3,
+      "labels": [
+        "source",
+        "target=azure-aks",
+        "target=azure-container-apps",
+        "target=azure-appservice",
+        "capability=containerization",
+        "domain=cloud-readiness",
+        "category=remote-communication",
+        "containerization",
+        "os=windows",
+        "os=linux",
+        "discovery"
+      ]
+    },
+    "hardcoded-urls-00001": {
+      "id": "hardcoded-urls-00001",
+      "description": "This patterns verifies in source code and configuration files the presence of hardcoded URLs using the HTTP protocol (HTTP/HTTPS). This URL would need to be replaced by the new resource's URL during the Cloud migration, if any change occured.",
+      "title": "Avoid using hardcoded URLs (HTTP protocol) in source code",
+      "severity": "optional",
+      "effort": 3,
+      "labels": [
+        "target=azure-aks",
+        "target=azure-container-apps",
+        "target=azure-appservice",
+        "source",
+        "domain=cloud-readiness",
+        "category=remote-communication",
+        "os=windows",
+        "os=linux"
+      ]
+    },
+    "localhost-00004": {
+      "id": "localhost-00004",
+      "description": "The app is trying to use localhost, please try to migrate the resource to cloud",
+      "title": "Localhost Usage",
+      "severity": "optional",
+      "effort": 3,
+      "labels": [
+        "target=azure-aks",
+        "target=azure-container-apps",
+        "target=azure-appservice",
+        "capability=containerization",
+        "source",
+        "domain=cloud-readiness",
+        "category=local-resource-access",
+        "localhost",
+        "containerization",
+        "os=windows",
+        "os=linux"
+      ]
+    },
+    "localhost-http-00001": {
+      "id": "localhost-http-00001",
+      "description": "The app is trying to access local resource by HTTP, please try to migrate the resource to cloud",
+      "title": "Local HTTP Calls",
+      "severity": "mandatory",
+      "effort": 3,
+      "labels": [
+        "target=azure-aks",
+        "target=azure-container-apps",
+        "target=azure-appservice",
+        "capability=containerization",
+        "source",
+        "domain=cloud-readiness",
+        "category=local-resource-access",
+        "localhost",
+        "containerization",
+        "os=windows",
+        "os=linux"
+      ]
+    },
+    "spring-boot-to-azure-port-01000": {
+      "id": "spring-boot-to-azure-port-01000",
+      "description": "The application is setting the server port. To migrate a Java application that sets the server port to Azure Container Apps:\n\n * **Azure Container Apps allows you to expose port according to your Azure Container Apps resource configuration. For instance, a Spring Boot application listens to port of 8080 by default, but it can be set with server.port or environment variable SERVER_PORT as you need.",
+      "title": "Server port configuration found",
+      "severity": "potential",
+      "effort": 1,
+      "links": [
+        {
+          "url": "https://learn.microsoft.com/azure/developer/java/migration/migrate-spring-boot-to-azure-container-apps#identify-any-clients-relying-on-a-non-standard-port",
+          "title": "Identify any clients relying on a non-standard port"
+        }
+      ],
+      "labels": [
+        "source=springboot",
+        "target=azure-aks",
+        "target=azure-appservice",
+        "target=azure-container-apps",
+        "domain=cloud-readiness",
+        "category=spring-migration",
+        "port",
+        "server port",
+        "os=windows",
+        "os=linux"
+      ]
+    },
+    "spring-boot-to-azure-restricted-config-01000": {
+      "id": "spring-boot-to-azure-restricted-config-01000",
+      "description": "The application uses restricted configurations for Azure Container Apps.\n These properties can be automatically injected into your application environment by Azure Container Apps to access managed Config Server and managed Eureka Server.\n Please remove them from your application, including configuration files, config server files, command line parameters, Java system attributes, and environment variables.\n\n If configured in **configuration files**: they will be ignored and overrided by Azure Container Apps.\n \n If configured in **Config Server files**, **command line parameters**, **Java system attribute**, **environment variable**: they need to be removed or you might experience conflicts and unexpected behavior.",
+      "title": "Restricted configurations found",
+      "severity": "potential",
+      "effort": 2,
+      "links": [
+        {
+          "url": "https://learn.microsoft.com/azure/developer/java/migration/migrate-spring-cloud-to-azure-container-apps#remove-restricted-configurations",
+          "title": "Migrate Spring Boot applications to Azure Container Apps - Remove restricted configurations"
+        },
+        {
+          "url": "https://learn.microsoft.com/azure/container-apps/java-config-server?tabs=azure-cli",
+          "title": "Connect to a managed Config Server for Spring in Azure Container Apps"
+        },
+        {
+          "url": "https://learn.microsoft.com/azure/container-apps/java-eureka-server?tabs=azure-cli",
+          "title": "Connect to a managed Eureka Server for Spring in Azure Container Apps"
+        }
+      ],
+      "labels": [
+        "target=azure-container-apps",
+        "source=springboot",
+        "domain=cloud-readiness",
+        "category=spring-migration",
+        "os=windows",
+        "os=linux"
+      ]
+    },
+    "unsecure-network-protocol-00000": {
+      "id": "unsecure-network-protocol-00000",
+      "description": "Using secured protocols such as HTTPS and SFTP (over HTTP and FTP) should now be the norm as applications are more and more exposed and interconnected. \nThis CloudReady patterns looks for unescured URI in the source code or deprecated URI libraries. \nIdeally, URLs should be replaced in your source code by secured protocols HTTPS and SFTP (and ensure the infrastructure implements these protocols for the resources your application calls, uses or references).",
+      "title": "Use of unsecured network protocols or URI libraries",
+      "severity": "mandatory",
+      "effort": 3,
+      "links": [
+        {
+          "url": "https://developers.google.com/web/fundamentals/security/encrypt-in-transit/why-https",
+          "title": "Why HTTPS matters"
+        },
+        {
+          "url": "https://www.ssh.com/ssh/sftp/",
+          "title": "SSH File Transfer Protocol (SFTP): Get SFTP client & server"
+        }
+      ],
+      "labels": [
+        "target=azure-aks",
+        "target=azure-container-apps",
+        "target=azure-appservice",
+        "capability=containerization",
+        "source",
+        "domain=cloud-readiness",
+        "category=remote-communication",
+        "containerization",
+        "os=windows",
+        "os=linux"
+      ]
+    }
+  },
+  "security": []
+}
