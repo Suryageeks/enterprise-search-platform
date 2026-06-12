@@ -1,4 +1,4 @@
-# AI-Powered Log Intelligence Platform with RAG and LangGraph Agents
+s# AI-Powered Log Intelligence Platform with RAG and LangGraph Agents
 
 ## 1. Objective
 

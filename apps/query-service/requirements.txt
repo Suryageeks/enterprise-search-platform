@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+python-dotenv
+
+langchain
+langchain-core
+langchain-qdrant
+langchain-openai
+
+qdrant-client
+transformers
+torch
+tokenizers

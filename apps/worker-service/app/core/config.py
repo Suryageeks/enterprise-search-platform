@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     qdrant_collection_alias: str = "documents"
     qdrant_vector_distance: str = "cosine"
 
+    opensearch_url: str = "http://localhost:9200"
+    opensearch_log_index: str = "normalized-logs"
+    opensearch_username: str | None = None
+    opensearch_password: str | None = None
+    opensearch_use_ssl: bool = False
+    opensearch_verify_certs: bool = False
+
     embedding_model: str = "bert-base-uncased"
     embedding_batch_size: int = 32
     embedding_device: str = "cpu"

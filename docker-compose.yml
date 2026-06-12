@@ -1,15 +1,21 @@
 services:
-  # postgres:
-  #   image: postgres:16
-  #   container_name: postgres
-  #   environment:
-  #     POSTGRES_DB: search-postgres
-  #     POSTGRES_USER: admin
-  #     POSTGRES_PASSWORD: admin
-  #   ports:
-  #     - "5433:5432"
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql
+  postgres:
+    image: postgres:16
+    container_name: enterprise-search-postgres
+    environment:
+      POSTGRES_DB: aisearchdb
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d aisearchdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7.2
@@ -31,6 +37,55 @@ services:
       - "6333:6333"
     volumes:
       - qdrant_data:/qdrant/storage
+
+  opensearch:
+    image: opensearchproject/opensearch:2.15.0
+    container_name: enterprise-search-opensearch
+    environment:
+      - discovery.type=single-node
+      - DISABLE_SECURITY_PLUGIN=true
+      - bootstrap.memory_lock=true
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  opensearch-init:
+    image: curlimages/curl:8.10.1
+    container_name: enterprise-search-opensearch-init
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    volumes:
+      - ./docker/opensearch/init:/scripts:ro
+    command: ["sh", "/scripts/init-opensearch.sh"]
+    restart: "no"
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.15.0
+    container_name: enterprise-search-opensearch-dashboards
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    environment:
+      - OPENSEARCH_HOSTS=["http://opensearch:9200"]
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+    ports:
+      - "5601:5601"
 
   localstack:
     image: localstack/localstack:latest
@@ -70,5 +125,7 @@ services:
     restart: unless-stopped
 
 volumes:
+  postgres_data:
   qdrant_data:
+  opensearch_data:
   redis-data:

@@ -20,3 +20,4 @@ qdrant-client
 transformers
 torch
 tokenizers
+opensearch-py[async]
