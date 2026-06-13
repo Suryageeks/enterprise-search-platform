@@ -1,2 +1,8 @@
 localstack-data/
 gateway/jwk.json
+.env
+.venv/
+venv/
+apps/*/.env
+apps/*/.venv/
+apps/*/venv/

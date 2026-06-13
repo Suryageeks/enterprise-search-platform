@@ -7,9 +7,10 @@ python-dotenv
 langchain
 langchain-core
 langchain-qdrant
-langchain-openai
 
 qdrant-client
 transformers
 torch
 tokenizers
+
+langchain-google-genai
