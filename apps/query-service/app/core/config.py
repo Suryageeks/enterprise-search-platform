@@ -16,6 +16,17 @@ class Settings(BaseSettings):
     embedding_model: str = "bert-base-uncased"
     embedding_device: str = "cpu"
 
+    default_top_k: int = 5
+    max_context_chars: int = 8000
+
+    opensearch_url: str = "http://localhost:9200"
+    opensearch_index: str = "normalized-logs"
+    opensearch_username: str | None = None
+    opensearch_password: str | None = None
+    opensearch_use_ssl: bool = False
+    opensearch_verify_certs: bool = False
+    app_timezone: str = "Asia/Kolkata"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -1,6 +1,9 @@
 from pydantic import BaseModel, Field
 
+from typing import Any
+
 from app.schemas.rag import RagSource
+from app.schemas.logs import LogAggregation, LogEvidence
 
 class AnalysisQueryRequest(BaseModel):
     message: str = Field(..., min_length=1, description="The user's question to be analyzed.")
@@ -10,3 +13,10 @@ class AnalysisQueryResponse(BaseModel):
     intent: str
     answer: str
     sources: list[RagSource] = []
+    used_context: bool = False
+
+    evidence: list[LogEvidence] = []
+    aggregations: list[LogAggregation] = []
+    dashboard: dict[str, Any] | None = None
+
+

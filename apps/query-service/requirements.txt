@@ -16,3 +16,5 @@ tokenizers
 langchain-google-genai
 
 langgraph
+
+opensearch-py[async]

@@ -14,3 +14,4 @@ class RagSource(BaseModel):
 class RagQueryResponse(BaseModel):
     answer: str
     sources: list[RagSource]
+    used_context: bool = False 

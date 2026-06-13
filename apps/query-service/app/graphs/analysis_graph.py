@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from typing import Literal, TypedDict
+from typing import Literal, TypedDict, Any
 
 from langgraph.graph import END, StateGraph
 
 from app.schemas.rag import RagSource
 from app.services.rag_service import rag_service
+from app.schemas.logs import LogAggregation, LogEvidence
+from app.services.log_agent_service import log_agent_service
 
 
 Intent = Literal[
@@ -25,6 +27,11 @@ class AnalysisGraphState(TypedDict, total=False):
 
     answer: str
     sources: list[RagSource]
+    used_context: bool
+
+    evidence: list[LogEvidence]
+    aggregations: list[LogAggregation]
+    dashboard: dict[str, Any] | None
 
     error: str
 
@@ -53,6 +60,9 @@ def route_by_intent(state: AnalysisGraphState) -> str:
 
     if intent == "RAG_QUERY":
         return "rag_agent"
+    
+    if intent == "LOG_QUERY":
+        return "log_agent"
 
     return "unsupported_agent"
 
@@ -67,6 +77,22 @@ async def rag_agent(state: AnalysisGraphState) -> AnalysisGraphState:
         **state,
         "answer": result.answer,
         "sources": result.sources,
+        "used_context": result.used_context,
+    }
+
+async def log_agent(state: AnalysisGraphState) -> AnalysisGraphState:
+    result = await log_agent_service.answer_log_question(
+        question=state["question"],
+        size=10,
+    )
+
+    return {
+        **state,
+        "answer": result.answer,
+        "evidence": result.evidence,
+        "aggregations": result.aggregations,
+        "sources": [],
+        "used_context": False,
     }
 
 
@@ -77,6 +103,7 @@ async def unsupported_agent(state: AnalysisGraphState) -> AnalysisGraphState:
         **state,
         "answer": f"{intent} is not implemented yet. Currently only RAG_QUERY is supported.",
         "sources": [],
+        "used_context": False,
     }
 
 
@@ -85,6 +112,7 @@ def create_analysis_graph():
 
     graph.add_node("classify_intent", classify_intent)
     graph.add_node("rag_agent", rag_agent)
+    graph.add_node("log_agent", log_agent)
     graph.add_node("unsupported_agent", unsupported_agent)
 
     graph.set_entry_point("classify_intent")
@@ -94,11 +122,13 @@ def create_analysis_graph():
         route_by_intent,
         {
             "rag_agent": "rag_agent",
+            "log_agent": "log_agent",
             "unsupported_agent": "unsupported_agent",
         },
     )
 
     graph.add_edge("rag_agent", END)
+    graph.add_edge("log_agent", END)
     graph.add_edge("unsupported_agent", END)
 
     return graph.compile()
