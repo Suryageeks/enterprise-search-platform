@@ -4,7 +4,6 @@ import json
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 from app.core.config import settings
@@ -19,11 +18,7 @@ class LogQueryParser:
             max_output_tokens=settings.max_output_tokens
         )
 
-        self.prompt = ChatPromptTemplate.from_messages(
-            [
-                (
-                    "system",
-                    """
+        self.system_prompt = """
                         You convert natural language log questions into strict JSON filters.
 
                         Return ONLY valid JSON.
@@ -60,30 +55,16 @@ class LogQueryParser:
                             - If unsure, put remaining important search words in keywords.
                             - size must be between 1 and 100.
                             - Use the current time and timezone for relative time.
-                    """,
-                ),
-                (
-                    "human",
                     """
-                        Current time: {current_time}
-                        Timezone: {timezone}
-
-                        User question:
-                        {question}
-                    """,
-                ),
-            ]
-        )
 
     async def parse(self, question: str, size: int = 10) -> ParsedLogQuery:
         now = datetime.now(ZoneInfo(settings.app_timezone)).isoformat()
 
-        prompt_value = self.prompt.invoke(
-            {
-                "current_time": now,
-                "timezone": settings.app_timezone,
-                "question": question
-            }
+        prompt_value = (
+            f"{self.system_prompt}\n\n"
+            f"Current time: {now}\n"
+            f"Timezone: {settings.app_timezone}\n\n"
+            f"User question:\n{question}"
         )
 
         response = await self.llm.ainvoke(prompt_value)

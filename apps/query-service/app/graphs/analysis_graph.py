@@ -8,6 +8,8 @@ from app.schemas.rag import RagSource
 from app.services.rag_service import rag_service
 from app.schemas.logs import LogAggregation, LogEvidence
 from app.services.log_agent_service import log_agent_service
+from app.schemas.dashboard import DashboardSpec
+from app.services.dashboard_agent_service import dashboard_agent_service
 
 
 Intent = Literal[
@@ -31,7 +33,7 @@ class AnalysisGraphState(TypedDict, total=False):
 
     evidence: list[LogEvidence]
     aggregations: list[LogAggregation]
-    dashboard: dict[str, Any] | None
+    dashboard: DashboardSpec | None
 
     error: str
 
@@ -39,7 +41,7 @@ class AnalysisGraphState(TypedDict, total=False):
 async def classify_intent(state: AnalysisGraphState) -> AnalysisGraphState:
     question = state["question"].lower()
 
-    dashboard_words = ["dashboard", "chart", "graph", "visualize", "plot"]
+    dashboard_words = ["dashboard", "chart", "graph", "visualize", "plot", "charts", "graphs", "visualize", "plots", "widget", "panel", "report"]
     log_words = ["log", "logs", "error", "errors", "trace", "status code", "5xx", "4xx"]
 
     if any(word in question for word in dashboard_words):
@@ -63,6 +65,9 @@ def route_by_intent(state: AnalysisGraphState) -> str:
     
     if intent == "LOG_QUERY":
         return "log_agent"
+
+    if intent == "DASHBOARD_QUERY":
+        return "dashboard_agent"
 
     return "unsupported_agent"
 
@@ -95,6 +100,21 @@ async def log_agent(state: AnalysisGraphState) -> AnalysisGraphState:
         "used_context": False,
     }
 
+async def dashboard_agent(state: AnalysisGraphState) -> AnalysisGraphState:
+    result = await dashboard_agent_service.generate_dashboard(
+        question=state["question"]
+    )
+
+    return {
+        **state,
+        "answer": result.answer,
+        "dashboard": result.dashboard,
+        "sources": [],
+        "used_context": False,
+        "evidence": [],
+        "aggregations": [],
+    }
+
 
 async def unsupported_agent(state: AnalysisGraphState) -> AnalysisGraphState:
     intent = state.get("intent", "UNSUPPORTED")
@@ -113,6 +133,7 @@ def create_analysis_graph():
     graph.add_node("classify_intent", classify_intent)
     graph.add_node("rag_agent", rag_agent)
     graph.add_node("log_agent", log_agent)
+    graph.add_node("dashboard_agent", dashboard_agent)
     graph.add_node("unsupported_agent", unsupported_agent)
 
     graph.set_entry_point("classify_intent")
@@ -123,12 +144,14 @@ def create_analysis_graph():
         {
             "rag_agent": "rag_agent",
             "log_agent": "log_agent",
+            "dashboard_agent": "dashboard_agent",
             "unsupported_agent": "unsupported_agent",
         },
     )
 
     graph.add_edge("rag_agent", END)
     graph.add_edge("log_agent", END)
+    graph.add_edge("dashboard_agent", END)
     graph.add_edge("unsupported_agent", END)
 
     return graph.compile()
