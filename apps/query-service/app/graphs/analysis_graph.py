@@ -8,7 +8,7 @@ from app.schemas.rag import RagSource
 from app.services.rag_service import rag_service
 from app.schemas.logs import LogAggregation, LogEvidence
 from app.services.log_agent_service import log_agent_service
-from app.schemas.dashboard import DashboardSpec
+from app.schemas.dashboard import DashboardSpec, ExecutedDashboard
 from app.services.dashboard_agent_service import dashboard_agent_service
 
 
@@ -33,7 +33,7 @@ class AnalysisGraphState(TypedDict, total=False):
 
     evidence: list[LogEvidence]
     aggregations: list[LogAggregation]
-    dashboard: DashboardSpec | None
+    dashboard: DashboardSpec | ExecutedDashboard | None
 
     error: str
 

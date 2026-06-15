@@ -4,7 +4,7 @@ from typing import Any
 
 from app.schemas.rag import RagSource
 from app.schemas.logs import LogAggregation, LogEvidence
-from app.schemas.dashboard import DashboardSpec
+from app.schemas.dashboard import DashboardSpec, ExecutedDashboard
 
 class AnalysisQueryRequest(BaseModel):
     message: str = Field(..., min_length=1, description="The user's question to be analyzed.")
@@ -18,5 +18,5 @@ class AnalysisQueryResponse(BaseModel):
 
     evidence: list[LogEvidence] = Field(default_factory=list)
     aggregations: list[LogAggregation] = Field(default_factory=list)
-    dashboard: DashboardSpec | None = None
+    dashboard: DashboardSpec | ExecutedDashboard | None = None
 

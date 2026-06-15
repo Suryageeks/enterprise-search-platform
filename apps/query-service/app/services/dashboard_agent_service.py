@@ -14,6 +14,7 @@ from app.schemas.dashboard import (
     DashboardSpec,
     DashboardWidget,
 )
+from app.services.dashboard_executor_service import dashboard_executor_service
 
 logger = logging.getLogger(__name__)
 
@@ -99,11 +100,21 @@ class DashboardAgentService:
     async def generate_dashboard(self, question: str) -> DashboardAgentResult:
         if settings.dashboard_use_gemini:
             try:
-                return await self.generate_with_gemini(question)
+                result = await self.generate_with_gemini(question)
             except Exception:
                 logger.exception("Gemini dashboard generation failed; falling back to rules")
+                result = self.generate_with_rules(question)
+        else:
+            result = self.generate_with_rules(question)
 
-        return self.generate_with_rules(question)
+        executed_dashboard = await dashboard_executor_service.execute_dashboard(
+            result.dashboard
+        )
+
+        return DashboardAgentResult(
+            answer=result.answer,
+            dashboard=executed_dashboard
+        )
 
     async def generate_with_gemini(self, question: str) -> DashboardAgentResult:
         prompt_value = f"{self.system_prompt}\n\nUser dashboard request:\n{question}"

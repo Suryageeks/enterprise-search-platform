@@ -65,4 +65,5 @@ class BertEmbeddings(Embeddings):
         mean_pooled = summed / counts
 
         return mean_pooled
+    
 
