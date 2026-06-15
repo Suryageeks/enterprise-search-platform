@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Annotated, TypedDict
+import json
+from typing import Annotated, TypedDict, Any
 
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
@@ -93,7 +94,7 @@ graph.add_edge("tools", "agent")
 
 enterprise_agent_graph = graph.compile()
 
-async def run_enterprise_agent(question: str) -> str:
+async def run_enterprise_agent(question: str) -> dict[str, Any]:
     result = await enterprise_agent_graph.ainvoke(
         {
             "messages": [
@@ -102,6 +103,63 @@ async def run_enterprise_agent(question: str) -> str:
         }
     )
 
-    final_message = result["messages"][-1]
+    messages = result["messages"]
+    final_message = messages[-1]
+
+    structured_outputs = extract_structured_outputs(messages)
     
-    return final_message.content
+    return {
+        "answer": str(final_message.content),
+        **structured_outputs
+    }
+
+def _safe_json_loads(raw: str) -> dict[str, Any]:
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return {}
+    
+    if isinstance(data, dict):
+        return data
+    return {}
+
+def extract_structured_outputs(messages: list[BaseMessage]) -> dict[str, Any]:
+    tool_calls: list[str] = []
+    logs: list[dict[str, Any]] = []
+    aggregations: list[dict[str, Any]] = []
+    sources: list[dict[str, Any]] = []
+    dashboard: dict[str, Any] | None = None
+
+    for message in messages:
+        if not isinstance(message, ToolMessage):
+            continue
+
+        tool_name = message.name or "unknown_tool"
+        tool_calls.append(tool_name)
+
+        data = _safe_json_loads(str(message.content))
+
+        if tool_name == "search_logs_tool":
+            logs.extend(data.get("logs", []))
+
+        elif tool_name == "aggregate_logs_tool":
+            aggregations.append(
+                {
+                    "field": data.get("field"),
+                    "buckets": data.get("buckets", []),
+                }
+            )
+
+        elif tool_name == "rag_search_tool":
+            sources.extend(data.get("sources", []))
+
+        elif tool_name == "generate_dashboard_tool":
+            dashboard = data.get("dashboard")
+
+    return {
+        "tool_calls": tool_calls,
+        "logs": logs,
+        "aggregations": aggregations,
+        "sources": sources,
+        "dashboard": dashboard,
+    }

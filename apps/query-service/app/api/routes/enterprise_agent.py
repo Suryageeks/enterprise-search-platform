@@ -10,8 +10,6 @@ router = APIRouter(
 
 @router.post("/query", response_model=EnterpriseAgentResponse)
 async def query_enterprise_agent(request: EnterpriseAgentRequest) -> EnterpriseAgentResponse:
-    answer = await run_enterprise_agent(request.question)
+    result = await run_enterprise_agent(request.question)
 
-    return EnterpriseAgentResponse(
-        answer=answer
-    )
+    return EnterpriseAgentResponse.model_validate(result)
