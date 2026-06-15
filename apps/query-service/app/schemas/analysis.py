@@ -20,3 +20,5 @@ class AnalysisQueryResponse(BaseModel):
     aggregations: list[LogAggregation] = Field(default_factory=list)
     dashboard: DashboardSpec | ExecutedDashboard | None = None
 
+    error: str | None = None
+

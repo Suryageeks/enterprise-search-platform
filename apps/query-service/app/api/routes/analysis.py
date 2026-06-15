@@ -27,6 +27,7 @@ async def query_analysis(request: AnalysisQueryRequest) -> AnalysisQueryResponse
             evidence=final_state.get("evidence", []),
             aggregations=final_state.get("aggregations", []),
             dashboard=final_state.get("dashboard"),
+            error=final_state.get("error") or None,
         )
     except RagServiceError as e:
         raise HTTPException(status_code=502, detail=e.message)

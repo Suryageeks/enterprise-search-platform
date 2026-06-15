@@ -42,11 +42,18 @@ async def classify_intent(state: AnalysisGraphState) -> AnalysisGraphState:
     question = state["question"].lower()
 
     dashboard_words = ["dashboard", "chart", "graph", "visualize", "plot", "charts", "graphs", "visualize", "plots", "widget", "panel", "report"]
-    log_words = ["log", "logs", "error", "errors", "trace", "status code", "5xx", "4xx"]
+    log_words = ["log","logs","error","errors","trace","status code","5xx","4xx","failure","failed","fail","exception","timeout"]
+    analysis_words = ["why","analyze","analysis","root cause","investigate","explain","what happened"]
 
-    if any(word in question for word in dashboard_words):
+    wants_dashboard = any(word in question for word in dashboard_words)
+    wants_logs = any(word in question for word in log_words)
+    wants_analysis = any(word in question for word in analysis_words)
+
+    if wants_dashboard and (wants_logs or wants_analysis):
+        intent: Intent = "MULTI_AGENT_QUERY"
+    elif wants_dashboard:
         intent: Intent = "DASHBOARD_QUERY"
-    elif any(word in question for word in log_words):
+    elif wants_logs:
         intent = "LOG_QUERY"
     else:
         intent = "RAG_QUERY"
@@ -68,6 +75,9 @@ def route_by_intent(state: AnalysisGraphState) -> str:
 
     if intent == "DASHBOARD_QUERY":
         return "dashboard_agent"
+    
+    if intent == "MULTI_AGENT_QUERY":
+        return "multi_agent"
 
     return "unsupported_agent"
 
@@ -115,6 +125,54 @@ async def dashboard_agent(state: AnalysisGraphState) -> AnalysisGraphState:
         "aggregations": [],
     }
 
+async def multi_agent(state: AnalysisGraphState) -> AnalysisGraphState:
+    question = state["question"]
+
+    log_result = None
+    dashboard_result = None
+
+    errors: list[str] = []
+
+    try:
+        log_result = await log_agent_service.answer_log_question(
+            question=question,
+            size=10,
+        )
+    except Exception as exc:
+        errors.append(f"Log Agent failed: {exc}")
+
+    try:
+        dashboard_result = await dashboard_agent_service.generate_dashboard(
+            question=question
+        )
+    except Exception as exc:
+        errors.append(f"Dashboard Agent failed: {exc}")
+
+    answer_parts: list[str] = []
+
+    if log_result:
+        answer_parts.append(log_result.answer)
+    
+    if dashboard_result:
+        answer_parts.append(dashboard_result.answer)
+
+    if errors:
+        answer_parts.append("Some agents failed: " + " | ".join(errors))
+    
+    if not answer_parts:
+        answer_parts.append("I could not complete the multi-agent analysis.")
+
+    return {
+        **state,
+        "answer": " ".join(answer_parts),
+        "evidence": log_result.evidence if log_result else [],
+        "aggregations": log_result.aggregations if log_result else [],
+        "dashboard": dashboard_result.dashboard if dashboard_result else None,
+        "sources": [],
+        "used_context": False,
+        "error": " | ".join(errors) if errors else "",
+    }
+
 
 async def unsupported_agent(state: AnalysisGraphState) -> AnalysisGraphState:
     intent = state.get("intent", "UNSUPPORTED")
@@ -134,6 +192,7 @@ def create_analysis_graph():
     graph.add_node("rag_agent", rag_agent)
     graph.add_node("log_agent", log_agent)
     graph.add_node("dashboard_agent", dashboard_agent)
+    graph.add_node("multi_agent", multi_agent)
     graph.add_node("unsupported_agent", unsupported_agent)
 
     graph.set_entry_point("classify_intent")
@@ -145,6 +204,7 @@ def create_analysis_graph():
             "rag_agent": "rag_agent",
             "log_agent": "log_agent",
             "dashboard_agent": "dashboard_agent",
+            "multi_agent": "multi_agent",
             "unsupported_agent": "unsupported_agent",
         },
     )
@@ -152,6 +212,7 @@ def create_analysis_graph():
     graph.add_edge("rag_agent", END)
     graph.add_edge("log_agent", END)
     graph.add_edge("dashboard_agent", END)
+    graph.add_edge("multi_agent", END)
     graph.add_edge("unsupported_agent", END)
 
     return graph.compile()
