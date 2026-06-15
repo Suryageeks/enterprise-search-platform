@@ -1,11 +1,11 @@
+from __future__ import annotations
+
 import asyncio
-from email import message
-from http import client
 import logging
+from typing import Any
 
 from app.clients.redis_client import redis_client
 from app.core.config import settings
-from app.db.models import IngestionJob
 from app.schemas.ingestion import IngestionJobMessage
 from app.services.ingestion_processor import ingestion_processor
 
@@ -40,7 +40,7 @@ class RedisConsumer:
         while self._running:
             try:
                 messages = await client.xreadgroup(
-                    grupname=settings.redis_consumer_group,
+                    groupname=settings.redis_consumer_group,
                     consumername=settings.redis_consumer_name,
                     streams={settings.redis_stream_name: ">"},
                     count=10,
@@ -69,5 +69,4 @@ class RedisConsumer:
         except Exception:
             logger.exception("Error processing message %s: %s", msg_id, payload)
 
-redis_consumer = RedisConsumer
-                        
+redis_consumer = RedisConsumer()
