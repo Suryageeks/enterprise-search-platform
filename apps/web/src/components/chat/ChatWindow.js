@@ -117,14 +117,14 @@ export default function ChatWindow() {
   }
 
   return (
-    <main className="min-h-screen bg-white text-[#101010]">
-      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[280px_1fr]">
+    <main className="h-screen overflow-hidden bg-white text-[#101010]">
+      <div className="grid h-screen grid-cols-1 overflow-hidden lg:grid-cols-[280px_1fr]">
         <Sidebar onPrompt={sendMessage} isSending={isSending} />
 
-        <section className="relative flex min-h-screen flex-col">
+        <section className="relative flex h-screen min-h-0 flex-col overflow-hidden">
           <TopBar />
 
-          <div className="flex-1 overflow-y-auto px-4 pb-64 pt-8">
+          <div className="min-h-0 flex-1 scroll-smooth overflow-y-auto overscroll-contain px-4 pb-56 pt-8">
             <div className="mx-auto max-w-[860px]">
               {hasConversation
                 ? <Conversation messages={messages} isSending={isSending} />
@@ -151,7 +151,7 @@ export default function ChatWindow() {
 
 function Sidebar({ onPrompt, isSending }) {
   return (
-    <aside className="hidden h-screen bg-[#f7f7f7] px-3 py-3 lg:flex lg:flex-col">
+    <aside className="hidden h-screen min-h-0 overflow-hidden bg-[#f7f7f7] px-3 py-3 lg:flex lg:flex-col">
       <div className="shrink-0">
         <div className="flex h-10 items-center justify-between px-1">
           <div className="flex items-center gap-2.5">
@@ -310,7 +310,8 @@ function Composer({
   textareaRef,
 }) {
   return (
-    <div className="fixed bottom-5 left-0 right-0 px-4 lg:left-[280px]">
+    <div className="pointer-events-none absolute bottom-0 left-0 right-0 bg-white px-4 pb-5 pt-6">
+      <div className="absolute inset-x-0 -top-8 h-8 bg-gradient-to-t from-white via-white/90 to-white/0" />
       <div className="mx-auto max-w-[860px]">
         {error
           ? <div className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -320,7 +321,7 @@ function Composer({
 
         <form
           onSubmit={onSubmit}
-          className="rounded-[28px] border border-black/5 bg-white p-3 shadow-[0_12px_40px_rgba(0,0,0,0.10)]"
+          className="pointer-events-auto rounded-[28px] border border-black/5 bg-white p-3 shadow-[0_12px_40px_rgba(0,0,0,0.10)]"
         >
           <textarea
             ref={textareaRef}
