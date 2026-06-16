@@ -109,9 +109,26 @@ async def run_enterprise_agent(question: str) -> dict[str, Any]:
     structured_outputs = extract_structured_outputs(messages)
     
     return {
-        "answer": str(final_message.content),
+        "answer": extract_message_text(final_message.content),
         **structured_outputs
     }
+
+def extract_message_text(content: Any) -> str:
+    if isinstance(content, str):
+        return content
+
+    if isinstance(content, list):
+        parts: list[str] = []
+
+        for item in content:
+            if isinstance(item, str):
+                parts.append(item)
+            elif isinstance(item, dict) and isinstance(item.get("text"), str):
+                parts.append(item["text"])
+
+        return "\n\n".join(parts)
+
+    return str(content)
 
 def _safe_json_loads(raw: str) -> dict[str, Any]:
     try:

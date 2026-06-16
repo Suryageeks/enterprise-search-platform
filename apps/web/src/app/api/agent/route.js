@@ -77,7 +77,7 @@ async function readJson(response) {
 
 function normalizeAgentPayload(payload) {
   return {
-    answer: payload?.answer || payload?.detail || "",
+    answer: normalizeAnswer(payload?.answer || payload?.detail || ""),
     tool_calls: payload?.tool_calls || [],
     logs: payload?.logs || [],
     aggregations: payload?.aggregations || [],
@@ -88,11 +88,43 @@ function normalizeAgentPayload(payload) {
 
 function normalizeAnalysisPayload(payload) {
   return {
-    answer: payload?.answer || payload?.detail || "",
+    answer: normalizeAnswer(payload?.answer || payload?.detail || ""),
     tool_calls: payload?.intent ? [`router:${payload.intent}`] : [],
     logs: payload?.logs || payload?.evidence || [],
     aggregations: payload?.aggregations || [],
     sources: payload?.sources || [],
     dashboard: payload?.dashboard || null,
   };
+}
+
+function normalizeAnswer(answer) {
+  if (!answer) {
+    return "";
+  }
+
+  if (Array.isArray(answer)) {
+    return answer.map(extractContentPart).filter(Boolean).join("\n\n");
+  }
+
+  if (typeof answer !== "string") {
+    return String(answer);
+  }
+
+  return answer;
+}
+
+function extractContentPart(part) {
+  if (typeof part === "string") {
+    return part;
+  }
+
+  if (part?.type === "text" && typeof part.text === "string") {
+    return part.text;
+  }
+
+  if (typeof part?.content === "string") {
+    return part.content;
+  }
+
+  return "";
 }

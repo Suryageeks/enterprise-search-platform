@@ -1,3 +1,6 @@
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
 export default function MessageBubble({ message }) {
   const isUser = message.role === "user";
 
@@ -13,13 +16,69 @@ export default function MessageBubble({ message }) {
             : "px-1 py-1 text-[#1f1f1f]"
         }`}
       >
-        <div className="whitespace-pre-wrap text-[14px] leading-6">
-          {message.content}
-        </div>
+        {isUser
+          ? <div className="whitespace-pre-wrap text-[14px] leading-6">
+              {message.content}
+            </div>
+          : <MarkdownAnswer content={message.content} />}
         {!isUser ? <StructuredPreview data={message.data} /> : null}
       </div>
       {isUser ? <Avatar label="You" dark /> : null}
     </article>
+  );
+}
+
+function MarkdownAnswer({ content }) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        p: ({ children }) => (
+          <p className="mb-3 text-[14px] leading-6 last:mb-0">{children}</p>
+        ),
+        ul: ({ children }) => (
+          <ul className="mb-3 list-disc space-y-1 pl-5 text-[14px] leading-6 last:mb-0">
+            {children}
+          </ul>
+        ),
+        ol: ({ children }) => (
+          <ol className="mb-3 list-decimal space-y-1 pl-5 text-[14px] leading-6 last:mb-0">
+            {children}
+          </ol>
+        ),
+        li: ({ children }) => <li className="pl-1">{children}</li>,
+        strong: ({ children }) => (
+          <strong className="font-semibold text-[#111]">{children}</strong>
+        ),
+        code: ({ children }) => (
+          <code className="rounded-md bg-[#f3f3f3] px-1.5 py-0.5 text-[13px]">
+            {children}
+          </code>
+        ),
+        pre: ({ children }) => (
+          <pre className="mb-3 overflow-x-auto rounded-xl bg-[#f7f7f7] p-3 text-[13px] leading-5">
+            {children}
+          </pre>
+        ),
+        table: ({ children }) => (
+          <div className="mb-3 overflow-x-auto">
+            <table className="w-full border-collapse text-[13px]">
+              {children}
+            </table>
+          </div>
+        ),
+        th: ({ children }) => (
+          <th className="border border-neutral-200 bg-neutral-50 px-2 py-1 text-left font-semibold">
+            {children}
+          </th>
+        ),
+        td: ({ children }) => (
+          <td className="border border-neutral-200 px-2 py-1">{children}</td>
+        ),
+      }}
+    >
+      {content || ""}
+    </ReactMarkdown>
   );
 }
 
@@ -109,7 +168,15 @@ function LogsPreview({ logs }) {
       <div className="divide-y divide-neutral-100">
         {logs.slice(0, 3).map((log, index) => (
           <div
-            key={`${log.trace_id || log.request_id || index}`}
+            key={[
+              log.trace_id,
+              log.request_id,
+              log.timestamp,
+              log.service,
+              index,
+            ]
+              .filter(Boolean)
+              .join("-")}
             className="grid gap-1 px-3 py-2 text-xs text-neutral-600 sm:grid-cols-[120px_1fr]"
           >
             <span className="font-medium text-neutral-800">
@@ -132,7 +199,9 @@ function SourcesPreview({ sources }) {
       <div className="mt-2 flex flex-wrap gap-2">
         {sources.slice(0, 4).map((source, index) => (
           <span
-            key={`${source.doc_id || source.file_name || index}`}
+            key={[source.doc_id, source.file_name, source.chunk_index, index]
+              .filter((value) => value !== undefined && value !== null)
+              .join("-")}
             className="rounded-full bg-white px-2.5 py-1 text-xs text-neutral-600"
           >
             {source.file_name || source.doc_id || "source"}
