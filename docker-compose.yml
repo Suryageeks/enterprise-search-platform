@@ -107,15 +107,17 @@ services:
       - ./localstack-data:/var/lib/localstack
       - /var/run/docker.sock:/var/run/docker.sock
 
-  krakend:
-    image: krakend:latest
-    container_name: krakend
+  traefik:
+    image: traefik:v3.3
+    container_name: enterprise-search-traefik
     ports:
-      - "9080:8080"
+      - "9080:9080"
+      - "9081:9081"
     volumes:
-      - ./apps/gateway/krakend.json:/etc/krakend/krakend.json
-      - ./apps/gateway/jwk.json:/etc/krakend/jwk.json
-    command: ["run", "-c", "/etc/krakend/krakend.json"]
+      - ./apps/gateway/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./apps/gateway/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   redis-insight:
     image: redislabs/redisinsight:latest
