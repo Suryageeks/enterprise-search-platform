@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { queryEnterpriseAgent } from "@/lib/api";
+import { streamEnterpriseAgent } from "@/lib/streamAgent";
 import MessageBubble from "./MessageBubble";
 
 const PROMPTS = [
@@ -39,6 +40,7 @@ export default function ChatWindow() {
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState("");
+  const [activeTools, setActiveTools] = useState([]);
   const textareaRef = useRef(null);
 
   const canSend = input.trim().length > 0 && !isSending;
@@ -67,37 +69,93 @@ export default function ChatWindow() {
     ]);
     setInput("");
     setError("");
+    setActiveTools([]);
     setIsSending(true);
 
-    try {
-      const result = await queryEnterpriseAgent(question);
-      setMessages((current) => [
-        ...current,
-        {
-          id: createMessageId(),
-          role: "assistant",
-          content:
-            result.answer ||
-            "The agent completed the request, but did not return an answer.",
-          data: result,
-        },
-      ]);
-    } catch (requestError) {
-      const message =
-        requestError instanceof Error
-          ? requestError.message
-          : "Unable to reach the enterprise agent.";
+    let assistantMessageId = null;
 
-      setError(message);
+    try {
+      assistantMessageId = createMessageId();
+
       setMessages((current) => [
         ...current,
         {
-          id: createMessageId(),
+          id: assistantMessageId,
           role: "assistant",
-          content: `I could not complete that request. ${message}`,
-          data: null,
+          content: "",
+          data: {
+            tool_calls: [],
+            logs: [],
+            aggregations: [],
+            sources: [],
+            dashboard: null,
+          },
         },
       ]);
+
+      await streamEnterpriseAgent(question, {
+        onToken: (token) => {
+          if (!token) {
+            return;
+          }
+
+          setMessages((current) =>
+            current.map((message) =>
+              message.id === assistantMessageId
+                ? {
+                    ...message,
+                    content: `${message.content}${token}`,
+                  }
+                : message,
+            ),
+          );
+        },
+        onToolStart: (tool) => {
+          setActiveTools((current) => upsertTool(current, tool, "running"));
+          setMessages((current) =>
+            current.map((message) =>
+              message.id === assistantMessageId
+                ? {
+                    ...message,
+                    data: {
+                      ...message.data,
+                      tool_calls: uniqueList([
+                        ...(message.data?.tool_calls || []),
+                        tool,
+                      ]),
+                    },
+                  }
+                : message,
+            ),
+          );
+        },
+        onToolEnd: (tool) => {
+          setActiveTools((current) => upsertTool(current, tool, "done"));
+        },
+        onDone: () => {
+          setActiveTools((current) =>
+            current.map((tool) => ({ ...tool, status: "done" })),
+          );
+        },
+      });
+
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === assistantMessageId && !message.content.trim()
+            ? {
+                ...message,
+                content: "Done.",
+              }
+            : message,
+        ),
+      );
+    } catch (requestError) {
+      if (assistantMessageId) {
+        setMessages((current) =>
+          current.filter((message) => message.id !== assistantMessageId),
+        );
+      }
+      await sendMessageWithoutStream(question, requestError);
     } finally {
       setIsSending(false);
       requestAnimationFrame(() => textareaRef.current?.focus());
@@ -127,7 +185,11 @@ export default function ChatWindow() {
           <div className="min-h-0 flex-1 scroll-smooth overflow-y-auto overscroll-contain px-4 pb-56 pt-8">
             <div className="mx-auto max-w-[860px]">
               {hasConversation
-                ? <Conversation messages={messages} isSending={isSending} />
+                ? <Conversation
+                    activeTools={activeTools}
+                    messages={messages}
+                    isSending={isSending}
+                  />
                 : <EmptyState onPrompt={sendMessage} isSending={isSending} />}
             </div>
           </div>
@@ -137,6 +199,7 @@ export default function ChatWindow() {
             error={error}
             input={input}
             isSending={isSending}
+            activeTools={activeTools}
             latestToolCalls={latestToolCalls}
             onChange={setInput}
             onKeyDown={handleKeyDown}
@@ -147,6 +210,64 @@ export default function ChatWindow() {
       </div>
     </main>
   );
+
+  async function sendMessageWithoutStream(question, streamError) {
+    try {
+      const result = await queryEnterpriseAgent(question);
+
+      setMessages((current) => [
+        ...current,
+        {
+          id: createMessageId(),
+          role: "assistant",
+          content:
+            result.answer ||
+            "The agent completed the request, but did not return an answer.",
+          data: result,
+        },
+      ]);
+      setActiveTools(
+        (result.tool_calls || []).map((tool) => ({
+          name: tool,
+          status: "done",
+        })),
+      );
+    } catch (requestError) {
+      const message =
+        requestError instanceof Error
+          ? requestError.message
+          : streamError instanceof Error
+            ? streamError.message
+            : "Unable to reach the enterprise agent.";
+
+      setError(message);
+      setMessages((current) => [
+        ...current,
+        {
+          id: createMessageId(),
+          role: "assistant",
+          content: `I could not complete that request. ${message}`,
+          data: null,
+        },
+      ]);
+    }
+  }
+}
+
+function upsertTool(tools, name, status) {
+  const existing = tools.find((tool) => tool.name === name);
+
+  if (existing) {
+    return tools.map((tool) =>
+      tool.name === name ? { ...tool, status } : tool,
+    );
+  }
+
+  return [...tools, { name, status }];
+}
+
+function uniqueList(items) {
+  return [...new Set(items)];
 }
 
 function Sidebar({ onPrompt, isSending }) {
@@ -283,7 +404,7 @@ function EmptyState({ onPrompt, isSending }) {
   );
 }
 
-function Conversation({ messages, isSending }) {
+function Conversation({ activeTools, messages, isSending }) {
   return (
     <div className="mx-auto max-w-[760px] space-y-5 pt-6">
       {messages.map((message) => (
@@ -291,7 +412,8 @@ function Conversation({ messages, isSending }) {
       ))}
       {isSending
         ? <div className="rounded-2xl bg-[#f7f7f7] px-4 py-3 text-sm text-[#777]">
-            The agent is thinking.
+            <div>The agent is thinking.</div>
+            {activeTools.length ? <ToolStatus tools={activeTools} /> : null}
           </div>
         : null}
     </div>
@@ -303,6 +425,7 @@ function Composer({
   error,
   input,
   isSending,
+  activeTools,
   latestToolCalls,
   onChange,
   onKeyDown,
@@ -318,6 +441,7 @@ function Composer({
               {error}
             </div>
           : null}
+        {activeTools.length ? <ToolStatus tools={activeTools} compact /> : null}
 
         <form
           onSubmit={onSubmit}
@@ -376,4 +500,37 @@ function Composer({
       </div>
     </div>
   );
+}
+
+function ToolStatus({ tools, compact = false }) {
+  return (
+    <output
+      className={`flex flex-wrap gap-2 ${compact ? "mb-2" : "mt-3"}`}
+      aria-label="Internal tools"
+    >
+      {tools.map((tool) => (
+        <span
+          key={tool.name}
+          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs ${
+            tool.status === "running"
+              ? "border-amber-200 bg-amber-50 text-amber-800"
+              : "border-emerald-200 bg-emerald-50 text-emerald-800"
+          }`}
+        >
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${
+              tool.status === "running"
+                ? "animate-pulse bg-amber-500"
+                : "bg-emerald-500"
+            }`}
+          />
+          {formatToolName(tool.name)}
+        </span>
+      ))}
+    </output>
+  );
+}
+
+function formatToolName(name) {
+  return name.replaceAll("_", " ");
 }

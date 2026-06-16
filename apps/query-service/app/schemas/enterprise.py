@@ -18,3 +18,6 @@ class EnterpriseAgentResponse(BaseModel):
     sources: list[dict[str, Any]] = Field(default_factory=list)
 
     dashboard: dict[str, Any] | None = None
+
+class EnterpriseAgentStreamRequest(BaseModel):
+    question: str = Field(..., min_length=1)
