@@ -124,7 +124,7 @@ export default function ChatWindow() {
         <section className="relative flex min-h-screen flex-col">
           <TopBar />
 
-          <div className="flex-1 overflow-y-auto px-4 pb-44 pt-8">
+          <div className="flex-1 overflow-y-auto px-4 pb-64 pt-8">
             <div className="mx-auto max-w-[860px]">
               {hasConversation
                 ? <Conversation messages={messages} isSending={isSending} />
@@ -151,48 +151,60 @@ export default function ChatWindow() {
 
 function Sidebar({ onPrompt, isSending }) {
   return (
-    <aside className="hidden bg-[#f7f7f7] px-3 py-3 lg:flex lg:flex-col">
-      <div className="flex h-10 items-center justify-between px-1">
-        <button type="button" className="grid h-8 w-8 place-items-center">
-          <span className="h-4 w-4 rounded-sm border border-black" />
-        </button>
-        <div className="flex items-center gap-3 text-xl">
-          <button type="button" aria-label="Search">
-            ⌕
-          </button>
-          <button type="button" aria-label="New chat">
-            ⌑
-          </button>
+    <aside className="hidden h-screen bg-[#f7f7f7] px-3 py-3 lg:flex lg:flex-col">
+      <div className="shrink-0">
+        <div className="flex h-10 items-center justify-between px-1">
+          <div className="flex items-center gap-2.5">
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-black text-[11px] font-semibold text-white">
+              LG
+            </span>
+            <span className="text-[16px] font-semibold tracking-[-0.02em]">
+              LogGPT
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              className="h-8 rounded-lg px-2 text-xs font-medium text-[#555] hover:bg-[#ececec]"
+              aria-label="Search"
+            >
+              Search
+            </button>
+            <button
+              type="button"
+              className="grid h-8 w-8 place-items-center rounded-lg text-lg text-[#555] hover:bg-[#ececec]"
+              aria-label="New chat"
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-5 space-y-1">
+          {["LogGPT", "Log Analyst", "Dashboard Builder", "RAG Search"].map(
+            (item, index) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => onPrompt(item)}
+                disabled={isSending}
+                className={`flex h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-[14px] transition hover:bg-[#eeeeee] disabled:opacity-60 ${
+                  index === 0 ? "bg-[#eeeeee]" : ""
+                }`}
+              >
+                <span
+                  className={`h-5 w-5 rounded-full ${
+                    index === 0 ? "bg-black" : "bg-[#d8d8d8]"
+                  }`}
+                />
+                {item}
+              </button>
+            ),
+          )}
         </div>
       </div>
 
-      <div className="mt-6 space-y-1">
-        {[
-          "Enterprise Agent",
-          "Log Analyst",
-          "Dashboard Builder",
-          "RAG Search",
-        ].map((item, index) => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => onPrompt(item)}
-            disabled={isSending}
-            className={`flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-[15px] transition hover:bg-[#eeeeee] disabled:opacity-60 ${
-              index === 0 ? "bg-[#eeeeee]" : ""
-            }`}
-          >
-            <span
-              className={`h-6 w-6 rounded-full ${
-                index === 0 ? "bg-black" : "bg-[#d8d8d8]"
-              }`}
-            />
-            {item}
-          </button>
-        ))}
-      </div>
-
-      <nav className="mt-8 flex-1 overflow-y-auto px-1">
+      <nav className="mt-6 flex-1 overflow-y-auto px-1 pb-4">
         {Object.entries(HISTORY).map(([section, items]) => (
           <div key={section} className="mb-7">
             <div className="mb-2 px-2 text-sm font-semibold">{section}</div>
@@ -213,20 +225,22 @@ function Sidebar({ onPrompt, isSending }) {
         ))}
       </nav>
 
-      <button
-        type="button"
-        className="mb-1 flex items-center gap-3 rounded-2xl bg-[#eeeeee] p-3 text-left"
-      >
-        <span className="grid h-9 w-9 place-items-center rounded-full bg-white text-lg">
-          ✦
-        </span>
-        <span>
-          <span className="block text-sm font-semibold">Upgrade plan</span>
-          <span className="block text-xs text-[#777]">
-            More access to the best models
+      <div className="shrink-0 border-t border-black/5 pt-3">
+        <button
+          type="button"
+          className="mb-1 flex w-full items-center gap-3 rounded-2xl bg-[#eeeeee] p-3 text-left"
+        >
+          <span className="grid h-9 w-9 place-items-center rounded-full bg-white text-lg">
+            +
           </span>
-        </span>
-      </button>
+          <span>
+            <span className="block text-sm font-semibold">New workspace</span>
+            <span className="block text-xs text-[#777]">
+              Add logs and documents
+            </span>
+          </span>
+        </button>
+      </div>
     </aside>
   );
 }
@@ -235,7 +249,7 @@ function TopBar() {
   return (
     <header className="flex h-14 shrink-0 items-center justify-between px-5">
       <button type="button" className="text-[17px] font-medium">
-        Enterprise Agent <span className="text-[#777]">⌄</span>
+        LogGPT <span className="text-[#777]">⌄</span>
       </button>
       <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#e6d7c8] to-[#1f2937]" />
     </header>
@@ -246,9 +260,7 @@ function EmptyState({ onPrompt, isSending }) {
   return (
     <div className="flex min-h-[calc(100vh-15rem)] flex-col items-center justify-center text-center">
       <div className="h-20 w-20 rounded-full bg-gradient-to-br from-[#e1e1e1] via-[#cfcfcf] to-[#222]" />
-      <h1 className="mt-5 text-3xl font-semibold tracking-[-0.04em]">
-        Enterprise Agent
-      </h1>
+      <h1 className="mt-5 text-3xl font-semibold tracking-[-0.04em]">LogGPT</h1>
       <div className="mt-2 text-sm text-[#777]">By Enterprise Search</div>
       <p className="mt-4 max-w-lg text-[17px] leading-7">
         Ask questions across logs, dashboards, and internal RAG sources.
@@ -339,10 +351,15 @@ function Composer({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                className="grid h-8 w-8 place-items-center rounded-full border border-black/10 text-sm"
+                className="grid h-8 w-8 place-items-center rounded-full border border-black/10 text-[#222] transition hover:bg-[#f5f5f5]"
                 aria-label="Voice input"
               >
-                mic
+                <span className="relative block h-4 w-3">
+                  <span className="absolute left-1/2 top-0 h-2.5 w-2 -translate-x-1/2 rounded-full border border-current" />
+                  <span className="absolute left-1/2 top-[8px] h-2.5 w-px -translate-x-1/2 bg-current" />
+                  <span className="absolute bottom-1 left-1/2 h-1.5 w-3 -translate-x-1/2 rounded-b-full border-b border-l border-r border-current" />
+                  <span className="absolute bottom-0 left-1/2 h-px w-2 -translate-x-1/2 bg-current" />
+                </span>
               </button>
               <button
                 type="submit"

@@ -1,4 +1,4 @@
-const DEFAULT_BACKEND_AGENT_URL = "http://localhost:8091/api/agents/query";
+const DEFAULT_BACKEND_AGENT_URL = "http://localhost:9080/api/agents/query";
 
 export async function POST(request) {
   const backendUrl =

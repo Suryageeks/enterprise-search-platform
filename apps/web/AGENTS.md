@@ -82,7 +82,7 @@ Later passes:
 Use a small API helper in `src/lib/api.js`. The frontend should call the query-service/gateway endpoint configured by environment variable, for example:
 
 ```text
-NEXT_PUBLIC_AGENT_API_URL=http://localhost:8091/api/agents/query
+AGENT_API_URL=http://localhost:9080/api/agents/query
 ```
 
 Keep the helper isolated so we can later switch from direct query-service calls to gateway calls without rewriting UI components.
