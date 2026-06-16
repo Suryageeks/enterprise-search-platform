@@ -4,20 +4,12 @@ import json
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from langchain_google_genai import ChatGoogleGenerativeAI
-
+from app.services.llm_service import llm_service
 from app.core.config import settings
 from app.schemas.logs import ParsedLogQuery
 
 class LogQueryParser:
     def __init__(self) -> None:
-        self.llm = ChatGoogleGenerativeAI(
-            model=settings.chat_model,
-            google_api_key=settings.google_api_key,
-            temperature=0,
-            max_output_tokens=settings.max_output_tokens
-        )
-
         self.system_prompt = """
                         You convert natural language log questions into strict JSON filters.
 
@@ -67,7 +59,7 @@ class LogQueryParser:
             f"User question:\n{question}"
         )
 
-        response = await self.llm.ainvoke(prompt_value)
+        response = await llm_service.ainvoke(prompt_value)
         raw_text = str(response.content).strip()
 
         data = self._parse_json(raw_text)

@@ -5,13 +5,13 @@ from typing import Any
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_qdrant import QdrantVectorStore
-from langchain_google_genai import ChatGoogleGenerativeAI
 from qdrant_client import QdrantClient, models
 
 from app.core.config import settings
 from app.schemas.rag import RagQueryResponse, RagSource
 from app.services.bert_embeddings import BertEmbeddings
 from app.services.errors import RagServiceError
+from app.services.llm_service import llm_service
 
 logger = logging.getLogger(__name__)
 
@@ -25,14 +25,7 @@ class RagService:
             collection_name=settings.qdrant_collection_name,
             embedding=self.embeddings,
         )
-
-        self.llm = ChatGoogleGenerativeAI(
-            model=settings.chat_model,
-            google_api_key=settings.google_api_key,
-            temperature=0,
-            max_output_tokens=settings.max_output_tokens
-        )
-
+        
         self.prompt = ChatPromptTemplate.from_messages(
             [
                 (
@@ -155,10 +148,12 @@ class RagService:
         )
 
         try:
-            response = await self.llm.ainvoke(prompt_value)
+            response = await llm_service.ainvoke(prompt_value)
             return str(response.content)
         except Exception as e:
-            logger.exception("Gemini answer generation failed")
-            raise RagServiceError("Gemini answer generation failed. Check GOOGLE_API_KEY and CHAT_MODEL.") from e
+            logger.exception("LLM answer generation failed")
+            raise RagServiceError(
+                "LLM answer generation failed. Check Gemini/Ollama configuration."
+            ) from e
 
 rag_service = RagService()

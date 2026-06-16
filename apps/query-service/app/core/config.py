@@ -2,7 +2,8 @@ from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    google_api_key: str = Field(
+    google_api_key: str | None = Field(
+        default=None,
         validation_alias=AliasChoices("GOOGLE_API_KEY", "GEMINI_API_KEY"),
     )
 
@@ -10,7 +11,12 @@ class Settings(BaseSettings):
     qdrant_collection_name: str = "documents"
 
     chat_model: str = "gemini-3.5-flash"
-    max_output_tokens: int = 1024
+    temperature: float = 0.2
+    max_output_tokens: int = 700
+
+    enable_ollama_fallback: bool = True
+    ollama_model: str = "qwen3.5:2b"
+    ollama_host: str = "http://localhost:11434"
 
 
     embedding_model: str = "bert-base-uncased"

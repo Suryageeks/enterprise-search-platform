@@ -5,8 +5,6 @@ import logging
 from typing import Any
 from uuid import uuid4
 
-from langchain_google_genai import ChatGoogleGenerativeAI
-
 from app.core.config import settings
 from app.schemas.dashboard import (
     DashboardAgentResult,
@@ -15,18 +13,12 @@ from app.schemas.dashboard import (
     DashboardWidget,
 )
 from app.services.dashboard_executor_service import dashboard_executor_service
+from app.services.llm_service import llm_service
 
 logger = logging.getLogger(__name__)
 
 class DashboardAgentService:
-    def __init__(self):
-        self.llm = ChatGoogleGenerativeAI(
-            model=settings.chat_model,
-            google_api_key=settings.google_api_key,
-            temperature=0,
-            max_output_tokens=settings.max_output_tokens,
-        )
-    
+    def __init__(self):    
         self.system_prompt = """
                         You generate dashboard JSON specs for operational log analytics.
 
@@ -119,7 +111,7 @@ class DashboardAgentService:
     async def generate_with_gemini(self, question: str) -> DashboardAgentResult:
         prompt_value = f"{self.system_prompt}\n\nUser dashboard request:\n{question}"
 
-        response = await self.llm.ainvoke(prompt_value)
+        response = await llm_service.ainvoke(prompt_value)
         raw_text = str(response.content).strip()
 
         data = self.parse_json(raw_text)

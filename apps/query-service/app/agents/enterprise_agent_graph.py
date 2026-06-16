@@ -3,16 +3,15 @@ from __future__ import annotations
 import json
 from typing import Annotated, TypedDict, Any
 
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 
-from app.core.config import settings
 from app.tools.log_tools import search_logs_tool, aggregate_logs_tool
 from app.tools.dashboard_tools import generate_dashboard_tool
 from app.tools.rag_tools import rag_search_tool
+from app.services.llm_service import llm_service
 
 class EnterpriseAgentState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
@@ -23,15 +22,6 @@ tools = [
     rag_search_tool,
     generate_dashboard_tool,
 ]
-
-llm = ChatGoogleGenerativeAI(
-    model=settings.chat_model,
-    google_api_key=settings.google_api_key,
-    temperature=0,
-    max_output_tokens=settings.max_output_tokens,
-)
-
-llm_with_tools = llm.bind_tools(tools)
 
 async def call_model(state: EnterpriseAgentState) -> EnterpriseAgentState:
     system_message = SystemMessage(
@@ -58,7 +48,8 @@ async def call_model(state: EnterpriseAgentState) -> EnterpriseAgentState:
         """
     )
 
-    response = await llm_with_tools.ainvoke(
+    response = await llm_service.ainvoke_with_tools(
+        tools,
         [system_message, *state["messages"]]
     )
 
