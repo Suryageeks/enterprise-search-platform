@@ -83,4 +83,7 @@ curl -fsS -X POST "${OPENSEARCH_URL}/${INDEX_NAME}/_bulk?refresh=true" \
 {"timestamp":"2026-06-13T04:04:00Z","service":"orders","environment":"dev","level":"ERROR","message":"Payment authorization failed after downstream 502","traceId":"trace-1002","requestId":"req-1005","statusCode":502,"host":"orders-1","endpoint":"/orders","method":"POST","durationMs":1900,"exceptionType":"DownstreamServiceException","tags":["orders","payments"],"rawSource":"mock-orders.log","ingestedAt":"2026-06-13T04:04:05Z","userId":"user-002"}
 NDJSON
 
+OPENSEARCH_URL="${OPENSEARCH_URL}" INDEX_NAME="${INDEX_NAME}" \
+  sh /scripts/seed-mock-logs.sh
+
 echo "OpenSearch index initialization complete"
