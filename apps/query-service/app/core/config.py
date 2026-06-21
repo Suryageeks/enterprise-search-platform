@@ -38,6 +38,10 @@ class Settings(BaseSettings):
         "postgresql://admin:admin@localhost:5433/aisearchdb"
     )
 
+    mlflow_enabled: bool = True
+    mlflow_tracking_uri: str = "http://localhost:5050"
+    mlflow_experiment_name: str = "enterprise-log-agent"
+
     dashboard_use_gemini: bool = True
 
     model_config = SettingsConfigDict(

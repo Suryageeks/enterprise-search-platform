@@ -14,9 +14,11 @@ from app.memory.checkpoint import (
     close_checkpoint_store,
     open_checkpoint_store,
 )
+from app.observability.mlflow import configure_mlflow
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    configure_mlflow()
     checkpointer = await open_checkpoint_store()
 
     app.state.checkpointer = checkpointer
