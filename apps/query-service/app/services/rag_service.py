@@ -18,13 +18,7 @@ logger = logging.getLogger(__name__)
 class RagService:
     def __init__(self) -> None:
         self.embeddings = BertEmbeddings()
-        self.ensure_qdrant_collection()
-
-        self.vector_store = QdrantVectorStore.from_existing_collection(
-            url=settings.qdrant_url,
-            collection_name=settings.qdrant_collection_name,
-            embedding=self.embeddings,
-        )
+        self.vector_store: QdrantVectorStore | None = None
         
         self.prompt = ChatPromptTemplate.from_messages(
             [
@@ -54,7 +48,10 @@ class RagService:
         )
     
     def ensure_qdrant_collection(self) -> None:
-        client = QdrantClient(url=settings.qdrant_url)
+        client = QdrantClient(
+            url=settings.qdrant_url,
+            check_compatibility=False,
+        )
 
         if client.collection_exists(settings.qdrant_collection_name):
             return
@@ -66,6 +63,17 @@ class RagService:
                 distance=models.Distance.COSINE,
             ),
         )
+
+    def get_vector_store(self) -> QdrantVectorStore:
+        if self.vector_store is None:
+            self.ensure_qdrant_collection()
+            self.vector_store = QdrantVectorStore.from_existing_collection(
+                url=settings.qdrant_url,
+                collection_name=settings.qdrant_collection_name,
+                embedding=self.embeddings,
+            )
+
+        return self.vector_store
 
 
     async def query(self, question: str, top_k: int | None = None) -> RagQueryResponse:
@@ -102,7 +110,9 @@ class RagService:
     
 
     async def retrieve_documents(self, question: str, top_k: int):
-        return await self.vector_store.asimilarity_search_with_score(
+        vector_store = self.get_vector_store()
+
+        return await vector_store.asimilarity_search_with_score(
             query=question,
             k=top_k,
         )

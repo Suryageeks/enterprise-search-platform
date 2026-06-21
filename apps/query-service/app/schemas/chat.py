@@ -37,3 +37,24 @@ class ChatMessageResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class ChatQueryRequest(BaseModel):
+    query: str = Field(
+        min_length=1,
+        max_length=10_000,
+    )
+    
+class ChatQueryResponse(BaseModel):
+    session_id: UUID
+    answer: str
+    tool_calls: list[str] = Field(default_factory=list)
+    logs: list[dict[str, Any]] = Field(default_factory=list)
+    aggregations: list[dict[str, Any]] = Field(default_factory=list)
+    sources: list[dict[str, Any]] = Field(default_factory=list)
+    dashboard: dict[str, Any] | None = None
+
+class ChatStreamRequest(BaseModel):
+    query: str = Field(
+        min_length=1,
+        max_length=10000
+    )

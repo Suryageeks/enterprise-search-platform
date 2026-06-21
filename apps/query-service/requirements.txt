@@ -8,17 +8,18 @@ langchain
 langchain-core
 langchain-qdrant
 langchain-ollama
+langchain-google-genai
 
 qdrant-client
 transformers
 torch
 tokenizers
 
-langchain-google-genai
-
 langgraph
+langgraph-checkpoint-postgres
 
 opensearch-py[async]
 
 sqlalchemy[asyncio]
 asyncpg
+psycopg[binary,pool]

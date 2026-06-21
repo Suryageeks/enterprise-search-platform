@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     app_timezone: str = "Asia/Kolkata"
 
     database_url: str = "postgresql+asyncpg://admin:admin@localhost:5433/aisearchdb"
+    langgraph_checkpoint_url: str = (
+        "postgresql://admin:admin@localhost:5433/aisearchdb"
+    )
 
     dashboard_use_gemini: bool = True
 

@@ -14,7 +14,11 @@ from app.services.chat_session_service import (
     chat_session_service,
     ChatSessionNotFoundError
 )
-
+from app.agents.enterprise_agent_graph import (
+    delete_enterprise_agent_thread,
+    run_enterprise_agent,
+)
+from app.schemas.chat import ChatQueryRequest, ChatQueryResponse
 
 router = APIRouter(prefix="/api/chat", tags=["Chat"])
 
@@ -94,6 +98,11 @@ async def delete_session(
     db: AsyncSession = Depends(get_db_session),
 ) -> Response:
     try:
+        await chat_session_service.require_session(
+            db=db,
+            session_id=session_id,
+        )
+        await delete_enterprise_agent_thread(str(session_id))
         await chat_session_service.delete_session(
             db=db,
             session_id=session_id
@@ -122,3 +131,57 @@ async def list_messages(
         )
     except ChatSessionNotFoundError as exc:
         raise not_found_error() from exc
+
+@router.post(
+    "/sessions/{session_id}/query",
+    response_model=ChatQueryResponse,
+)
+async def query_session(
+    session_id: UUID,
+    request: ChatQueryRequest,
+    db: AsyncSession = Depends(get_db_session),
+):
+    try:
+        await chat_session_service.require_session(
+            db=db,
+            session_id=session_id
+        )
+
+    except ChatSessionNotFoundError as exc:
+        raise not_found_error() from exc
+    
+    question = request.query.strip()
+
+    await chat_session_service.add_message(
+        db=db,
+        session_id=session_id,
+        role="user",
+        content=question
+    )
+
+    result = await run_enterprise_agent(
+        question=question,
+        thread_id=str(session_id)
+    )
+
+    metadata = {
+        "tool_calls": result.get("tool_calls", []),
+        "logs": result.get("logs", []),
+        "aggregations": result.get("aggregations", []),
+        "sources": result.get("sources", []),
+        "dashboard": result.get("dashboard"),
+    }
+
+    await chat_session_service.add_message(
+        db=db,
+        session_id=session_id,
+        role="assistant",
+        content=result["answer"],
+        metadata=metadata
+    )
+
+    return ChatQueryResponse(
+        session_id=session_id,
+        answer=result["answer"],
+        **metadata,
+    )

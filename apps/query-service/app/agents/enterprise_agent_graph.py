@@ -2,16 +2,21 @@ from __future__ import annotations
 
 import json
 from typing import Annotated, TypedDict, Any
+from uuid import uuid4
 
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
+from langgraph.checkpoint.base import BaseCheckpointSaver
+from langgraph.graph.state import CompiledStateGraph
 
 from app.tools.log_tools import search_logs_tool, aggregate_logs_tool
 from app.tools.dashboard_tools import generate_dashboard_tool
 from app.tools.rag_tools import rag_search_tool
 from app.services.llm_service import llm_service
+
+enterprise_agent_graph: CompiledStateGraph | None = None
 
 class EnterpriseAgentState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
@@ -83,26 +88,81 @@ graph.add_conditional_edges(
 
 graph.add_edge("tools", "agent")
 
-enterprise_agent_graph = graph.compile()
+# enterprise_agent_graph = graph.compile()
 
-async def run_enterprise_agent(question: str) -> dict[str, Any]:
-    result = await enterprise_agent_graph.ainvoke(
+def initialize_enterprise_agent_graph(checkpointer: BaseCheckpointSaver) -> CompiledStateGraph:
+    global enterprise_agent_graph
+
+    enterprise_agent_graph = graph.compile(
+        checkpointer=checkpointer
+    )
+
+    return enterprise_agent_graph
+
+def get_enterprise_agent_graph() -> CompiledStateGraph:
+    if enterprise_agent_graph is None:
+        raise RuntimeError(
+            "Enterprise agent graph has not been initialized"
+        )
+    
+    return enterprise_agent_graph
+
+
+async def delete_enterprise_agent_thread(thread_id: str) -> None:
+    compiled_graph = get_enterprise_agent_graph()
+    checkpointer = compiled_graph.checkpointer
+
+    if checkpointer is None:
+        return
+
+    await checkpointer.adelete_thread(thread_id)
+
+async def run_enterprise_agent(
+        question: str,
+        thread_id: str
+    ) -> dict[str, Any]:
+
+    compiled_graph = get_enterprise_agent_graph()
+
+    current_message = HumanMessage(
+        id=str(uuid4()),
+        content=question
+    )
+
+    result = await compiled_graph.ainvoke(
         {
-            "messages": [
-                HumanMessage(content=question)
-            ]
+            "messages": [current_message]
+        },
+        config={
+            "configurable": {
+                "thread_id": thread_id,
+            }
         }
     )
 
-    messages = result["messages"]
-    final_message = messages[-1]
+    all_messages = result["messages"]
 
-    structured_outputs = extract_structured_outputs(messages)
-    
+    turn_messages = messages_from_current_turn(
+        messages=all_messages,
+        current_message_id=current_message.id
+    )
+
+    final_message = turn_messages[-1]
+
     return {
         "answer": extract_message_text(final_message.content),
-        **structured_outputs
+        **extract_structured_outputs(turn_messages),
     }
+
+def messages_from_current_turn(
+    messages: list[BaseMessage],
+    current_message_id: str
+) -> list[BaseMessage]:
+    for index, message in enumerate(messages):
+        if message.id == current_message_id:
+            return messages[index:]
+        
+    raise RuntimeError("Current user message was not found in graph state")
 
 def extract_message_text(content: Any) -> str:
     if isinstance(content, str):
