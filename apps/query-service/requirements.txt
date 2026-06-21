@@ -19,3 +19,6 @@ langchain-google-genai
 langgraph
 
 opensearch-py[async]
+
+sqlalchemy[asyncio]
+asyncpg

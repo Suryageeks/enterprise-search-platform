@@ -1,0 +1,39 @@
+from datetime import datetime
+from typing import Any
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
+
+class CreateChatSessionRequest(BaseModel):
+    title: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=255,
+    )
+
+class UpdateChatSessionRequest(BaseModel):
+    title: str = Field(
+        min_length=1,
+        max_length=255,
+    )
+
+class ChatSessionResponse(BaseModel):
+    id: UUID
+    title: str
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class ChatMessageResponse(BaseModel):
+    id: UUID
+    session_id: UUID
+    role: str
+    content: str
+    metadata: dict[str, Any] = Field(
+        default_factory=dict,
+        validation_alias="message_metadata",
+    )
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

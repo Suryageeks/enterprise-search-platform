@@ -1,5 +1,6 @@
 {
     "WhiteSource Advise.Diff.BaseBranch": "main",
     "postman.settings.dotenv-detection-notification-visibility": false,
-    "java.compile.nullAnalysis.mode": "disabled"
+    "java.compile.nullAnalysis.mode": "disabled",
+    "python.REPL.enableREPLSmartSend": false
 }

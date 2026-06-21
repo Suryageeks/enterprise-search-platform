@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     opensearch_verify_certs: bool = False
     app_timezone: str = "Asia/Kolkata"
 
+    database_url: str = "postgresql+asyncpg://admin:admin@localhost:5433/aisearchdb"
+
     dashboard_use_gemini: bool = True
 
     model_config = SettingsConfigDict(
