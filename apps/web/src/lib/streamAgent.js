@@ -53,12 +53,12 @@ export async function streamEnterpriseAgent(question, handlers = {}) {
       if (parsed.event === "tool_end") {
         handlers.onToolEnd?.(
           parsed.data.tool || "unknown_tool",
-          parsed.data.output,
+          parsed.data.result,
         );
       }
 
       if (parsed.event === "done") {
-        handlers.onDone?.();
+        handlers.onDone?.(parsed.data);
       }
     }
   }

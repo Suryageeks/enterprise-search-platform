@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import json
-
 from langchain_core.tools import tool
 
 from app.client.opensearch_client import opensearch_log_client
 from app.core.config import settings
 from app.schemas.logs import ParsedLogQuery
+from app.schemas.execution import ToolErrorCode
+from app.services.tool_result_service import execute_tool, tool_error
 
 
 def _parse_basic_log_query(query: str, size: int) -> ParsedLogQuery:
@@ -76,41 +76,57 @@ async def search_logs_tool(query: str, size: int = 10) -> str:
     Use this when the user asks for specific log events,
     failures, traces, errors, exceptions, requests, or services.
     """
-    parsed_query = _parse_basic_log_query(query=query, size=size)
 
-    result = await opensearch_log_client.search_logs(parsed_query=parsed_query)
-    hits = result.get("hits", {}).get("hits", [])
-    total = result.get("hits", {}).get("total", {})
-
-    logs = []
-
-    for hit in hits:
-        item = hit.get("_source", {})
-        logs.append(
-            {
-                "timestamp": item.get("timestamp"),
-                "service": item.get("service"),
-                "level": item.get("level"),
-                "message": item.get("message"),
-                "trace_id": item.get("traceId"),
-                "request_id": item.get("requestId"),
-                "status_code": item.get("statusCode"),
-                "endpoint": item.get("endpoint"),
-                "exception_type": item.get("exceptionType"),
-            }
+    if not query.strip():
+        return tool_error(
+            tool="search_logs_tool",
+            code=ToolErrorCode.INVALID_TOOL_INPUT,
+            message="Log search query cannot be empty",
         )
 
-    if isinstance(total, dict):
-        total_value = total.get("value", len(logs))
-    else:
-        total_value = total
+    size = max(1,min(size, settings.max_log_search_size))
 
-    return json.dumps(
-        {
+    async def operation() -> dict:
+
+        parsed_query = _parse_basic_log_query(query=query, size=size)
+
+        result = await opensearch_log_client.search_logs(parsed_query=parsed_query)
+        hits = result.get("hits", {}).get("hits", [])
+        total = result.get("hits", {}).get("total", {})
+
+        logs = []
+
+        for hit in hits:
+            item = hit.get("_source", {})
+            logs.append(
+                {
+                    "timestamp": item.get("timestamp"),
+                    "service": item.get("service"),
+                    "level": item.get("level"),
+                    "message": item.get("message"),
+                    "trace_id": item.get("traceId"),
+                    "request_id": item.get("requestId"),
+                    "status_code": item.get("statusCode"),
+                    "endpoint": item.get("endpoint"),
+                    "exception_type": item.get("exceptionType"),
+                }
+            )
+
+        if isinstance(total, dict):
+            total_value = total.get("value", len(logs))
+        else:
+            total_value = total
+
+        return {
             "total": total_value,
             "logs": logs,
-        },
-        default=str,
+        }
+
+    return await execute_tool(
+        tool="search_logs_tool",
+        operation=operation,
+        failure_code=ToolErrorCode.LOG_SEARCH_FAILED,
+        failure_message="Unable to search logs",
     )
 
 
@@ -134,32 +150,44 @@ async def aggregate_logs_tool(field: str, query: str = "", size: int = 10) -> st
         "exception_type": "exceptionType",
         "exceptionType": "exceptionType",
     }
+
+    if field not in field_map:
+        return tool_error(
+            tool="aggregate_logs_tool",
+            code=ToolErrorCode.INVALID_TOOL_INPUT,
+            message=f"Unsupported aggregation field: {field}",
+            details={"allowed_fields": sorted(field_map)},
+        )
+
+    size = max(1,min(size, settings.max_aggregation_size))
     opensearch_field = field_map.get(field, field)
 
-    parsed_query = _parse_basic_log_query(query=query, size=1)
+    async def operation() -> dict:
+        parsed_query = _parse_basic_log_query(query=query, size=1)
 
-    body = {
-        "size": 0,
-        "query": opensearch_log_client.build_query(parsed_query),
-        "aggs": {
-            "by_field": {
-                "terms": {
-                    "field": opensearch_field,
-                    "size": size,
-                }
-            }
-        },
-    }
+        result = await opensearch_log_client.client.search(
+            index=settings.opensearch_index,
+            body={
+                "size": 0,
+                "query": opensearch_log_client.build_query(parsed_query),
+                "aggs": {
+                    "by_field": {
+                        "terms": {
+                            "field": opensearch_field,
+                            "size": size,
+                        }
+                    }
+                },
+            },
+        )
 
-    result = await opensearch_log_client.client.search(
-        index=settings.opensearch_index,
-        body=body,
-    )
+        buckets = (
+            result.get("aggregations", {})
+            .get("by_field", {})
+            .get("buckets", [])
+        )
 
-    buckets = result.get("aggregations", {}).get("by_field", {}).get("buckets", [])
-
-    return json.dumps(
-        {
+        return {
             "field": opensearch_field,
             "buckets": [
                 {
@@ -168,6 +196,11 @@ async def aggregate_logs_tool(field: str, query: str = "", size: int = 10) -> st
                 }
                 for bucket in buckets
             ],
-        },
-        default=str,
+        }
+
+    return await execute_tool(
+        tool="aggregate_logs_tool",
+        operation=operation,
+        failure_code=ToolErrorCode.LOG_AGGREGATION_FAILED,
+        failure_message="Unable to aggregate logs",
     )

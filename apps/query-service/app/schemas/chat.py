@@ -3,6 +3,10 @@ from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
+from app.schemas.execution import (
+    ToolResult,
+    AgentExecutionStatus
+)
 
 class CreateChatSessionRequest(BaseModel):
     title: str | None = Field(
@@ -47,7 +51,12 @@ class ChatQueryRequest(BaseModel):
 class ChatQueryResponse(BaseModel):
     session_id: UUID
     answer: str
+    status: AgentExecutionStatus
+
     tool_calls: list[str] = Field(default_factory=list)
+    tool_results: list[ToolResult] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+
     logs: list[dict[str, Any]] = Field(default_factory=list)
     aggregations: list[dict[str, Any]] = Field(default_factory=list)
     sources: list[dict[str, Any]] = Field(default_factory=list)

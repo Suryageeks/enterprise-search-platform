@@ -11,6 +11,8 @@ from fastapi.responses import StreamingResponse
 from langchain_core.messages import HumanMessage
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.tool_result_service import parse_tool_result
+
 
 from app.agents.enterprise_agent_graph import (
     extract_message_text,
@@ -194,14 +196,19 @@ async def stream_agent_events(
                 )
             
             elif event_type == "on_tool_end":
+                raw_output = normalize_tool_output(data.get("output"))
+                parsed_result = parse_tool_result(raw_output)
+
                 yield sse_event(
                     "tool_end",
                     {
                         "tool": event_name or "unknown_tool",
-                        "output": normalize_tool_output(
-                            data.get("output")
-                        )
-                    }
+                        "result": (
+                            parsed_result.model_dump(mode="json")
+                            if parsed_result
+                            else None
+                        ),
+                    },
                 )
         
         snapshot = await compiled_graph.aget_state(graph_config)

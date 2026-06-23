@@ -15,6 +15,11 @@ from app.tools.log_tools import search_logs_tool, aggregate_logs_tool
 from app.tools.dashboard_tools import generate_dashboard_tool
 from app.tools.rag_tools import rag_search_tool
 from app.services.llm_service import llm_service
+from app.services.tool_result_service import (
+    build_warnings,
+    calculate_agent_status,
+    parse_tool_result,
+)
 
 enterprise_agent_graph: CompiledStateGraph | None = None
 
@@ -161,7 +166,7 @@ def messages_from_current_turn(
     for index, message in enumerate(messages):
         if message.id == current_message_id:
             return messages[index:]
-        
+
     raise RuntimeError("Current user message was not found in graph state")
 
 def extract_message_text(content: Any) -> str:
@@ -186,17 +191,18 @@ def _safe_json_loads(raw: str) -> dict[str, Any]:
         data = json.loads(raw)
     except json.JSONDecodeError:
         return {}
-    
+
     if isinstance(data, dict):
         return data
     return {}
 
 def extract_structured_outputs(messages: list[BaseMessage]) -> dict[str, Any]:
     tool_calls: list[str] = []
-    logs: list[dict[str, Any]] = []
-    aggregations: list[dict[str, Any]] = []
-    sources: list[dict[str, Any]] = []
-    dashboard: dict[str, Any] | None = None
+    tool_results = []
+    logs = []
+    aggregations = []
+    sources = []
+    dashboard = None
 
     for message in messages:
         if not isinstance(message, ToolMessage):
@@ -205,27 +211,43 @@ def extract_structured_outputs(messages: list[BaseMessage]) -> dict[str, Any]:
         tool_name = message.name or "unknown_tool"
         tool_calls.append(tool_name)
 
-        data = _safe_json_loads(str(message.content))
+        result = parse_tool_result(str(message.content))
+
+        if result is None:
+            continue
+
+        tool_results.append(result)
+
+        if result.data is None:
+            continue
 
         if tool_name == "search_logs_tool":
-            logs.extend(data.get("logs", []))
+            logs.extend(result.data.get("logs", []))
 
         elif tool_name == "aggregate_logs_tool":
             aggregations.append(
                 {
-                    "field": data.get("field"),
-                    "buckets": data.get("buckets", []),
+                    "field": result.data.get("field"),
+                    "buckets": result.data.get("buckets", []),
                 }
             )
 
         elif tool_name == "rag_search_tool":
-            sources.extend(data.get("sources", []))
+            sources.extend(result.data.get("sources", []))
 
         elif tool_name == "generate_dashboard_tool":
-            dashboard = data.get("dashboard")
+            dashboard = result.data.get("dashboard")
+
+    status = calculate_agent_status(tool_results)
 
     return {
+        "status": status,
         "tool_calls": tool_calls,
+        "tool_results": [
+            result.model_dump(mode="json")
+            for result in tool_results
+        ],
+        "warnings": build_warnings(tool_results),
         "logs": logs,
         "aggregations": aggregations,
         "sources": sources,

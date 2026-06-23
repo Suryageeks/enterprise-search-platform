@@ -44,6 +44,9 @@ class Settings(BaseSettings):
 
     dashboard_use_gemini: bool = True
 
+    max_log_search_size: int = 100
+    max_aggregation_size: int = 50
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

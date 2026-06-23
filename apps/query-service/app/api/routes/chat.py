@@ -165,7 +165,10 @@ async def query_session(
     )
 
     metadata = {
+        "status": result["status"],
         "tool_calls": result.get("tool_calls", []),
+        "tool_results": result.get("tool_results", []),
+        "warnings": result.get("warnings", []),
         "logs": result.get("logs", []),
         "aggregations": result.get("aggregations", []),
         "sources": result.get("sources", []),
