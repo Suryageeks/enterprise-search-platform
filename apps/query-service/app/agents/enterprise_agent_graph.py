@@ -4,7 +4,13 @@ import json
 from typing import Annotated, TypedDict, Any
 from uuid import uuid4
 
-from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    HumanMessage,
+    SystemMessage,
+    ToolMessage,
+)
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
@@ -20,11 +26,25 @@ from app.services.tool_result_service import (
     calculate_agent_status,
     parse_tool_result,
 )
+from app.prompts.enterprise_agent import (
+    ENTERPRISE_AGENT_PROMPT,
+)
+from app.schemas.domain import (
+    DomainClassification,
+    DomainDecision,
+)
+from app.services.domain_classifier_service import (
+    domain_classifier_service,
+)
+from app.services.evidence_service import (
+    messages_have_evidence,
+)
 
 enterprise_agent_graph: CompiledStateGraph | None = None
 
-class EnterpriseAgentState(TypedDict):
+class EnterpriseAgentState(TypedDict, total = False):
     messages: Annotated[list[BaseMessage], add_messages]
+    classification: dict[str, Any]
 
 tools = [
     search_logs_tool,
@@ -34,34 +54,56 @@ tools = [
 ]
 
 async def call_model(state: EnterpriseAgentState) -> EnterpriseAgentState:
+    classification = DomainClassification.model_validate(
+        state["classification"]
+    )
+
+    policy_content = {
+        "decision": classification.decision,
+        "requires_evidence": (
+            classification.requires_evidence
+        ),
+        "allow_code_solution": (
+            classification.allow_code_solution
+        )
+    }
+
     system_message = SystemMessage(
-        content="""
-            You are an Enterprise Log Intelligence Agent.
-
-            You can use tools to answer questions across logs, dashboards, and internal knowledge.
-
-            Available tool behavior:
-            - search_logs_tool: find specific log events in OpenSearch.
-            - aggregate_logs_tool: group/count logs by service, endpoint, level, status code, exception type.
-            - rag_search_tool: search internal documents, runbooks, and knowledge base content.
-            - generate_dashboard_tool: generate chart-ready dashboards for log analytics.
-
-            Rules:
-            - Use tools when the answer needs real data.
-            - Do not invent logs, sources, dashboards, counts, trace IDs, or services.
-            - For "create dashboard", "visualize", "chart", or "graph", call generate_dashboard_tool.
-            - For "what do docs/runbooks say", call rag_search_tool.
-            - For "did this happen", "show logs", "find errors", call search_logs_tool.
-            - For "by service", "top endpoints", "count by status", call aggregate_logs_tool.
-            - You may call multiple tools if the question needs multiple capabilities.
-            - After tool calls, provide a concise final answer.
-        """
+        content = (
+             ENTERPRISE_AGENT_PROMPT
+            + "\n\nCURRENT POLICY:\n"
+            + json.dumps(policy_content)
+        )
     )
 
     response = await llm_service.ainvoke_with_tools(
         tools,
-        [system_message, *state["messages"]]
+        [
+            system_message,
+            *state["messages"]
+        ]
     )
+
+    has_tool_calls = bool(
+        getattr(response,"tool_calls", None)
+    )
+
+    if (classification.requires_evidence 
+        and not has_tool_calls 
+        and not messages_have_evidence(
+            current_turn_messages(state["messages"])
+        )
+    ):
+        return {
+            "messages": [
+                AIMessage(
+                    content=(
+                        "I could not find sufficient authorized "
+                        "log or document evidence to answer this request."
+                    )
+                )
+            ]
+        }
 
     return {
         "messages": [response]
@@ -75,23 +117,187 @@ def should_continue(state: EnterpriseAgentState) -> str:
 
     return END
 
+'''
+Classification Node
+'''
+def latest_user_question(messages: list[BaseMessage]) -> str:
+    for message in reversed(messages):
+        if isinstance(message, HumanMessage):
+            return extract_message_text(
+                message.content
+            )
+    raise ValueError("No user question found")
+
+def conversation_context(messages: list[BaseMessage]) -> list[dict[str, Any]]:
+    context = []
+
+    for message in messages[-8:]:
+        if isinstance(message, ToolMessage):
+            continue
+
+        if isinstance(message, HumanMessage):
+            role = "user"
+        elif isinstance(message, AIMessage):
+            role = "assistant"
+        else:
+            continue
+
+        context.append(
+            {
+                "role": role,
+                "content": extract_message_text(
+                    message.content
+                )[:2000],
+            }
+        )
+    
+    return context
+
+async def classify_request(state: EnterpriseAgentState) -> EnterpriseAgentState:
+    classification = (
+        await domain_classifier_service.classify(
+            question=latest_user_question(
+                state["messages"]
+            ),
+            conversation_context=conversation_context(
+                state["messages"][:-1]
+            ),
+        )
+    )
+
+    return {
+        "classification": (
+            classification.model_dump(mode="json")
+        )
+    }
+
+
+'''
+Refusal Node
+'''
+async def refusal_request(state: EnterpriseAgentState) -> EnterpriseAgentState:
+    classification = DomainClassification.model_validate(
+        state["classification"]
+    )
+
+    if (classification.decision == DomainDecision.UNSAFE):
+        answer = (
+            "I cannot perform data modification, arbitrary "
+            "database/OpenSearch operations, or script execution. "
+            "I can only search and analyze authorized operational data."
+        )
+    else:
+        answer = (
+            "I can only answer questions related to authorized logs, "
+            "incidents, runbooks, operational dashboards, and fixes "
+            "supported by retrieved error evidence."
+        )
+
+    return {
+        "messages": [
+            AIMessage(content=answer)
+        ]
+    }
+
+'''
+Source/Grounding Validation
+'''
+
+def current_turn_messages(
+    messages: list[BaseMessage],
+) -> list[BaseMessage]:
+    for index in range(len(messages) - 1, -1, -1):
+        if isinstance(messages[index], HumanMessage):
+            return messages[index:]
+
+    return []
+
+async def validate_grounding(
+    state: EnterpriseAgentState,
+) -> EnterpriseAgentState:
+    classification = DomainClassification.model_validate(
+        state["classification"]
+    )
+
+    if not classification.requires_evidence:
+        return {"messages": []}
+
+    if messages_have_evidence(current_turn_messages(state["messages"])):
+        return {"messages": []}
+
+    return {
+        "messages": [
+            AIMessage(
+                content=(
+                    "No relevant authorized evidence was found. "
+                    "I cannot provide a diagnosis or code solution "
+                    "without supporting logs, runbooks, or incident data."
+                )
+            )
+        ]
+    }
+
+'''
+Graph Routing
+'''
+def route_after_classification(
+    state: EnterpriseAgentState,
+) -> str:
+    classification = DomainClassification.model_validate(
+        state["classification"]
+    )
+
+    if classification.decision in {
+        DomainDecision.OUT_OF_DOMAIN,
+        DomainDecision.UNSAFE
+    }:
+        return "refuse"
+    
+    return "agent"
+
+def route_after_agent(
+    state: EnterpriseAgentState,
+) -> str:
+    last_message = state["messages"][-1]
+
+    if getattr(last_message, "tool_calls", None):
+        return "tools"
+
+    return "validate_grounding"
+
 graph = StateGraph(EnterpriseAgentState)
 
+graph.add_node("classify_request",classify_request)
+graph.add_node("refuse",refusal_request)
 graph.add_node("agent", call_model)
 graph.add_node("tools", ToolNode(tools))
+graph.add_node("validate_grounding",validate_grounding)
 
-graph.set_entry_point("agent")
+graph.set_entry_point("classify_request")
+
+graph.add_conditional_edges(
+    "classify_request",
+    route_after_classification,
+    {
+        "refuse": "refuse",
+        "agent": "agent",
+    }
+)
 
 graph.add_conditional_edges(
     "agent",
-    should_continue,
+    route_after_agent,
     {
         "tools": "tools",
-        END: END
+        "validate_grounding": (
+            "validate_grounding"
+        ),
     }
 )
 
 graph.add_edge("tools", "agent")
+graph.add_edge("refuse", END)
+graph.add_edge("validate_grounding", END)
 
 # enterprise_agent_graph = graph.compile()
 

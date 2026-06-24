@@ -27,6 +27,9 @@ from app.services.chat_session_service import (
     ChatSessionNotFoundError,
     chat_session_service,
 )
+from app.services.evidence_service import (
+    tool_result_has_evidence,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -159,6 +162,7 @@ async def stream_agent_events(
     persist_assistant: bool,
 ) -> AsyncIterator[str]:
     
+    has_successful_evidence = False
     compiled_graph = get_enterprise_agent_graph()
 
     try:
@@ -174,6 +178,9 @@ async def stream_agent_events(
             data = event.get("data", {})
 
             if event_type == "on_chat_model_stream":
+                if not has_successful_evidence:
+                    continue
+                
                 chunk = data.get("chunk")
                 text = normalize_chunk_content(
                     getattr(chunk,"content","")
@@ -198,6 +205,9 @@ async def stream_agent_events(
             elif event_type == "on_tool_end":
                 raw_output = normalize_tool_output(data.get("output"))
                 parsed_result = parse_tool_result(raw_output)
+
+                if (parsed_result is not None and tool_result_has_evidence(parsed_result)):
+                    has_successful_evidence = True
 
                 yield sse_event(
                     "tool_end",
