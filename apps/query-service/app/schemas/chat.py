@@ -7,6 +7,7 @@ from app.schemas.execution import (
     ToolResult,
     AgentExecutionStatus
 )
+from app.schemas.remediation import RemediationResult
 
 class CreateChatSessionRequest(BaseModel):
     title: str | None = Field(
@@ -61,6 +62,7 @@ class ChatQueryResponse(BaseModel):
     aggregations: list[dict[str, Any]] = Field(default_factory=list)
     sources: list[dict[str, Any]] = Field(default_factory=list)
     dashboard: dict[str, Any] | None = None
+    remediation: RemediationResult | None = None
 
 class ChatStreamRequest(BaseModel):
     query: str = Field(

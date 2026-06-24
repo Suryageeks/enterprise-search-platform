@@ -37,7 +37,13 @@ from app.services.domain_classifier_service import (
     domain_classifier_service,
 )
 from app.services.evidence_service import (
+    collect_evidence,
     messages_have_evidence,
+)
+from app.services.remediation_renderer import render_remediation
+from app.services.remediation_service import (
+    RemediationGenerationError,
+    remediation_service,
 )
 
 enterprise_agent_graph: CompiledStateGraph | None = None
@@ -45,6 +51,7 @@ enterprise_agent_graph: CompiledStateGraph | None = None
 class EnterpriseAgentState(TypedDict, total = False):
     messages: Annotated[list[BaseMessage], add_messages]
     classification: dict[str, Any]
+    remediation: dict[str, Any] | None
 
 tools = [
     search_logs_tool,
@@ -168,7 +175,8 @@ async def classify_request(state: EnterpriseAgentState) -> EnterpriseAgentState:
     return {
         "classification": (
             classification.model_dump(mode="json")
-        )
+        ),
+        "remediation": None,
     }
 
 
@@ -237,6 +245,52 @@ async def validate_grounding(
         ]
     }
 
+
+async def generate_remediation(
+    state: EnterpriseAgentState,
+) -> EnterpriseAgentState:
+    classification = DomainClassification.model_validate(
+        state["classification"]
+    )
+    evidence = collect_evidence(current_turn_messages(state["messages"]))
+
+    if not evidence:
+        return {
+            "remediation": None,
+            "messages": [
+                AIMessage(
+                    content=(
+                        "No relevant authorized evidence was found. I cannot "
+                        "provide a diagnosis or code solution."
+                    )
+                )
+            ],
+        }
+
+    try:
+        result = await remediation_service.generate(
+            question=latest_user_question(state["messages"]),
+            evidence=evidence,
+            allow_code_solution=classification.allow_code_solution,
+        )
+    except RemediationGenerationError:
+        return {
+            "remediation": None,
+            "messages": [
+                AIMessage(
+                    content=(
+                        "Evidence was found, but I could not generate a "
+                        "validated remediation plan."
+                    )
+                )
+            ],
+        }
+
+    return {
+        "remediation": result.model_dump(mode="json"),
+        "messages": [AIMessage(content=render_remediation(result))],
+    }
+
 '''
 Graph Routing
 '''
@@ -263,6 +317,12 @@ def route_after_agent(
     if getattr(last_message, "tool_calls", None):
         return "tools"
 
+    classification = DomainClassification.model_validate(
+        state["classification"]
+    )
+    if classification.decision == DomainDecision.REMEDIATION:
+        return "remediation"
+
     return "validate_grounding"
 
 graph = StateGraph(EnterpriseAgentState)
@@ -272,6 +332,7 @@ graph.add_node("refuse",refusal_request)
 graph.add_node("agent", call_model)
 graph.add_node("tools", ToolNode(tools))
 graph.add_node("validate_grounding",validate_grounding)
+graph.add_node("remediation", generate_remediation)
 
 graph.set_entry_point("classify_request")
 
@@ -289,6 +350,7 @@ graph.add_conditional_edges(
     route_after_agent,
     {
         "tools": "tools",
+        "remediation": "remediation",
         "validate_grounding": (
             "validate_grounding"
         ),
@@ -296,6 +358,7 @@ graph.add_conditional_edges(
 )
 
 graph.add_edge("tools", "agent")
+graph.add_edge("remediation", "validate_grounding")
 graph.add_edge("refuse", END)
 graph.add_edge("validate_grounding", END)
 
@@ -360,9 +423,12 @@ async def run_enterprise_agent(
 
     final_message = turn_messages[-1]
 
+    structured = extract_structured_outputs(turn_messages)
+    structured["remediation"] = result.get("remediation")
+
     return {
         "answer": extract_message_text(final_message.content),
-        **extract_structured_outputs(turn_messages),
+        **structured,
     }
 
 def messages_from_current_turn(

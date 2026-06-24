@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from app.schemas.execution import AgentExecutionStatus, ToolResult
+from app.schemas.remediation import RemediationResult
 
 class EnterpriseAgentRequest(BaseModel):
     question: str = Field(..., min_length=1)
@@ -22,6 +23,7 @@ class EnterpriseAgentResponse(BaseModel):
     sources: list[dict[str, Any]] = Field(default_factory=list)
 
     dashboard: dict[str, Any] | None = None
+    remediation: RemediationResult | None = None
 
 class EnterpriseAgentStreamRequest(BaseModel):
     question: str = Field(..., min_length=1)

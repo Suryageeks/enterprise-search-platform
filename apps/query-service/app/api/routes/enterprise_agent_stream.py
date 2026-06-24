@@ -161,8 +161,9 @@ async def stream_agent_events(
     session_id: UUID | None,
     persist_assistant: bool,
 ) -> AsyncIterator[str]:
-    
+
     has_successful_evidence = False
+    classification_decision: str | None = None
     compiled_graph = get_enterprise_agent_graph()
 
     try:
@@ -176,11 +177,26 @@ async def stream_agent_events(
             event_type = event.get("event")
             event_name = event.get("name")
             data = event.get("data", {})
+            metadata = event.get("metadata", {})
+            graph_node = metadata.get("langgraph_node")
+
+            if event_type == "on_chain_end" and event_name == "classify_request":
+                output = data.get("output", {})
+                classification = output.get("classification", {})
+                classification_decision = classification.get("decision")
 
             if event_type == "on_chat_model_stream":
                 if not has_successful_evidence:
                     continue
-                
+
+                expected_node = (
+                    "remediation"
+                    if classification_decision == "remediation"
+                    else "agent"
+                )
+                if graph_node != expected_node:
+                    continue
+
                 chunk = data.get("chunk")
                 text = normalize_chunk_content(
                     getattr(chunk,"content","")
@@ -232,6 +248,7 @@ async def stream_agent_events(
         final_message = turn_messages[-1]
         answer = extract_message_text(final_message.content)
         structured = extract_structured_outputs(turn_messages)
+        structured["remediation"] = snapshot.values.get("remediation")
 
         if persist_assistant and session_id is not None:
             async with AsyncSessionLocal() as db:

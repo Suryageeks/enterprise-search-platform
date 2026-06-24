@@ -173,6 +173,7 @@ async def query_session(
         "aggregations": result.get("aggregations", []),
         "sources": result.get("sources", []),
         "dashboard": result.get("dashboard"),
+        "remediation": result.get("remediation"),
     }
 
     await chat_session_service.add_message(
