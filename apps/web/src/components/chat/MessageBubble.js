@@ -105,13 +105,17 @@ function StructuredPreview({ data }) {
   const sourcesCount = data.sources?.length || 0;
   const aggregationsCount = data.aggregations?.length || 0;
   const hasDashboard = Boolean(data.dashboard);
+  const hasRemediation = Boolean(data.remediation);
   const hasTools = data.tool_calls?.length > 0;
+  const warnings = data.warnings || [];
 
   if (
     !logsCount &&
     !sourcesCount &&
     !aggregationsCount &&
     !hasDashboard &&
+    !hasRemediation &&
+    !warnings.length &&
     !hasTools
   ) {
     return null;
@@ -119,6 +123,28 @@ function StructuredPreview({ data }) {
 
   return (
     <div className="mt-4 space-y-3 border-t border-neutral-100 pt-4">
+      {data.status === "partial" || data.status === "error"
+        ? <div
+            className={`rounded-lg px-3 py-2 text-xs ${
+              data.status === "error"
+                ? "bg-red-50 text-red-700"
+                : "bg-amber-50 text-amber-800"
+            }`}
+          >
+            {data.status === "error"
+              ? "The investigation could not retrieve usable evidence."
+              : "The answer uses partial results because one or more tools failed."}
+          </div>
+        : null}
+
+      {warnings.length
+        ? <ul className="space-y-1 text-xs text-amber-800">
+            {[...new Set(warnings)].map((warning) => (
+              <li key={warning}>{warning}</li>
+            ))}
+          </ul>
+        : null}
+
       {hasTools
         ? <div className="flex flex-wrap gap-2">
             {[...new Set(data.tool_calls)].map((tool) => (
@@ -141,6 +167,12 @@ function StructuredPreview({ data }) {
           value={hasDashboard ? "Ready" : "None"}
         />
       </div>
+
+      {hasRemediation
+        ? <div className="text-xs font-medium text-emerald-700">
+            Evidence-validated remediation available
+          </div>
+        : null}
 
       {logsCount ? <LogsPreview logs={data.logs} /> : null}
       {sourcesCount ? <SourcesPreview sources={data.sources} /> : null}

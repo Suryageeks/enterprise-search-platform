@@ -1,10 +1,14 @@
-export async function streamEnterpriseAgent(question, handlers = {}) {
-  const response = await fetch("/api/agent/stream", {
+export async function streamEnterpriseAgent(
+  sessionId,
+  question,
+  handlers = {},
+) {
+  const response = await fetch(`/api/chat/sessions/${sessionId}/stream`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ query: question }),
   });
 
   if (!response.ok || !response.body) {
@@ -23,6 +27,7 @@ export async function streamEnterpriseAgent(question, handlers = {}) {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+  let finalPayload = null;
 
   while (true) {
     const { value, done } = await reader.read();
@@ -58,10 +63,21 @@ export async function streamEnterpriseAgent(question, handlers = {}) {
       }
 
       if (parsed.event === "done") {
+        finalPayload = parsed.data;
         handlers.onDone?.(parsed.data);
+      }
+
+      if (parsed.event === "error") {
+        throw new Error(parsed.data.detail || "The agent stream failed.");
       }
     }
   }
+
+  if (!finalPayload) {
+    throw new Error("The agent stream ended without a final response.");
+  }
+
+  return finalPayload;
 }
 
 function parseSseEvent(rawEvent) {

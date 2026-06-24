@@ -1,7 +1,14 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { queryEnterpriseAgent } from "@/lib/api";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  createChatSession,
+  deleteChatSession,
+  listChatMessages,
+  listChatSessions,
+  normalizeAgentResult,
+  renameChatSession,
+} from "@/lib/api";
 import { streamEnterpriseAgent } from "@/lib/streamAgent";
 import MessageBubble from "./MessageBubble";
 
@@ -12,21 +19,6 @@ const PROMPTS = [
   "Show top services with errors",
 ];
 
-const HISTORY = {
-  Yesterday: [
-    "AI Capabilities",
-    "Payment timeout analysis",
-    "Gateway 5xx comparison",
-  ],
-  "Previous 30 Days": [
-    "Dashboard by endpoint",
-    "RAG source validation",
-    "Order failure trends",
-    "OpenSearch mock logs",
-    "Worker ingestion runtime",
-  ],
-};
-
 function createMessageId() {
   if (globalThis.crypto?.randomUUID) {
     return globalThis.crypto.randomUUID();
@@ -36,15 +28,25 @@ function createMessageId() {
 }
 
 export default function ChatWindow() {
+  const [sessions, setSessions] = useState([]);
+  const [activeSessionId, setActiveSessionId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState("");
   const [activeTools, setActiveTools] = useState([]);
+  const [isLoadingSession, setIsLoadingSession] = useState(true);
   const textareaRef = useRef(null);
 
-  const canSend = input.trim().length > 0 && !isSending;
+  const canSend =
+    input.trim().length > 0 &&
+    !isSending &&
+    !isLoadingSession &&
+    Boolean(activeSessionId);
   const hasConversation = messages.length > 0;
+  const activeSession = sessions.find(
+    (session) => session.id === activeSessionId,
+  );
   const latestToolCalls = useMemo(() => {
     const latest = messages
       .filter((message) => message.role === "assistant" && message.data)
@@ -52,10 +54,49 @@ export default function ChatWindow() {
     return latest?.data?.tool_calls || [];
   }, [messages]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function initializeSessions() {
+      try {
+        let availableSessions = await listChatSessions();
+
+        if (!availableSessions.length) {
+          availableSessions = [await createChatSession()];
+        }
+
+        const initialSession = availableSessions[0];
+        const persistedMessages = await listChatMessages(initialSession.id);
+
+        if (cancelled) {
+          return;
+        }
+
+        setSessions(availableSessions);
+        setActiveSessionId(initialSession.id);
+        setMessages(persistedMessages);
+      } catch (requestError) {
+        if (!cancelled) {
+          setError(getErrorMessage(requestError));
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingSession(false);
+        }
+      }
+    }
+
+    initializeSessions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   async function sendMessage(text) {
     const question = text.trim();
 
-    if (!question || isSending) {
+    if (!question || isSending || !activeSessionId) {
       return;
     }
 
@@ -84,16 +125,20 @@ export default function ChatWindow() {
           role: "assistant",
           content: "",
           data: {
+            status: "pending",
             tool_calls: [],
+            tool_results: [],
+            warnings: [],
             logs: [],
             aggregations: [],
             sources: [],
             dashboard: null,
+            remediation: null,
           },
         },
       ]);
 
-      await streamEnterpriseAgent(question, {
+      await streamEnterpriseAgent(activeSessionId, question, {
         onToken: (token) => {
           if (!token) {
             return;
@@ -129,33 +174,65 @@ export default function ChatWindow() {
             ),
           );
         },
-        onToolEnd: (tool) => {
+        onToolEnd: (tool, result) => {
           setActiveTools((current) => upsertTool(current, tool, "done"));
+          if (!result) {
+            return;
+          }
+
+          setMessages((current) =>
+            current.map((message) =>
+              message.id === assistantMessageId
+                ? {
+                    ...message,
+                    data: {
+                      ...message.data,
+                      tool_results: [
+                        ...(message.data?.tool_results || []),
+                        result,
+                      ],
+                    },
+                  }
+                : message,
+            ),
+          );
         },
-        onDone: () => {
+        onDone: (payload) => {
+          const result = normalizeAgentResult(payload);
+
+          setMessages((current) =>
+            current.map((message) =>
+              message.id === assistantMessageId
+                ? {
+                    ...message,
+                    content:
+                      result.answer ||
+                      "The agent completed the request without an answer.",
+                    data: result,
+                  }
+                : message,
+            ),
+          );
           setActiveTools((current) =>
             current.map((tool) => ({ ...tool, status: "done" })),
           );
+          refreshSessions();
         },
       });
-
+    } catch (requestError) {
+      const failureMessage = getErrorMessage(requestError);
+      setError(failureMessage);
       setMessages((current) =>
         current.map((message) =>
-          message.id === assistantMessageId && !message.content.trim()
+          message.id === assistantMessageId
             ? {
                 ...message,
-                content: "Done.",
+                content: `I could not complete that request. ${failureMessage}`,
+                data: null,
               }
             : message,
         ),
       );
-    } catch (requestError) {
-      if (assistantMessageId) {
-        setMessages((current) =>
-          current.filter((message) => message.id !== assistantMessageId),
-        );
-      }
-      await sendMessageWithoutStream(question, requestError);
     } finally {
       setIsSending(false);
       requestAnimationFrame(() => textareaRef.current?.focus());
@@ -174,23 +251,131 @@ export default function ChatWindow() {
     }
   }
 
+  async function refreshSessions() {
+    try {
+      setSessions(await listChatSessions());
+    } catch {
+      // The active conversation remains usable if the sidebar refresh fails.
+    }
+  }
+
+  async function handleNewChat() {
+    if (isSending) {
+      return;
+    }
+
+    setIsLoadingSession(true);
+    setError("");
+
+    try {
+      const session = await createChatSession();
+      setSessions((current) => [
+        session,
+        ...current.filter((item) => item.id !== session.id),
+      ]);
+      setActiveSessionId(session.id);
+      setMessages([]);
+      setActiveTools([]);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setIsLoadingSession(false);
+    }
+  }
+
+  async function handleSelectSession(sessionId) {
+    if (isSending || sessionId === activeSessionId) {
+      return;
+    }
+
+    setIsLoadingSession(true);
+    setError("");
+
+    try {
+      const persistedMessages = await listChatMessages(sessionId);
+      setActiveSessionId(sessionId);
+      setMessages(persistedMessages);
+      setActiveTools([]);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setIsLoadingSession(false);
+    }
+  }
+
+  async function handleRenameSession(session) {
+    const title = window.prompt("Rename chat", session.title);
+
+    if (!title?.trim() || title.trim() === session.title) {
+      return;
+    }
+
+    try {
+      const updated = await renameChatSession(session.id, title.trim());
+      setSessions((current) =>
+        current.map((item) => (item.id === updated.id ? updated : item)),
+      );
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    }
+  }
+
+  async function handleDeleteSession(sessionId) {
+    if (isSending || !window.confirm("Delete this chat?")) {
+      return;
+    }
+
+    try {
+      await deleteChatSession(sessionId);
+      let remaining = sessions.filter((session) => session.id !== sessionId);
+
+      if (!remaining.length) {
+        remaining = [await createChatSession()];
+      }
+
+      setSessions(remaining);
+
+      if (sessionId === activeSessionId) {
+        const nextSession = remaining[0];
+        setActiveSessionId(nextSession.id);
+        setMessages(await listChatMessages(nextSession.id));
+        setActiveTools([]);
+      }
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    }
+  }
+
   return (
     <main className="h-screen overflow-hidden bg-white text-[#101010]">
       <div className="grid h-screen grid-cols-1 overflow-hidden lg:grid-cols-[280px_1fr]">
-        <Sidebar onPrompt={sendMessage} isSending={isSending} />
+        <Sidebar
+          activeSessionId={activeSessionId}
+          isSending={isSending}
+          onDeleteSession={handleDeleteSession}
+          onNewChat={handleNewChat}
+          onPrompt={sendMessage}
+          onRenameSession={handleRenameSession}
+          onSelectSession={handleSelectSession}
+          sessions={sessions}
+        />
 
         <section className="relative flex h-screen min-h-0 flex-col overflow-hidden">
-          <TopBar />
+          <TopBar title={activeSession?.title} />
 
           <div className="min-h-0 flex-1 scroll-smooth overflow-y-auto overscroll-contain px-4 pb-56 pt-8">
             <div className="mx-auto max-w-[860px]">
-              {hasConversation
-                ? <Conversation
-                    activeTools={activeTools}
-                    messages={messages}
-                    isSending={isSending}
-                  />
-                : <EmptyState onPrompt={sendMessage} isSending={isSending} />}
+              {isLoadingSession
+                ? <div className="py-20 text-center text-sm text-[#777]">
+                    Loading conversation...
+                  </div>
+                : hasConversation
+                  ? <Conversation
+                      activeTools={activeTools}
+                      messages={messages}
+                      isSending={isSending}
+                    />
+                  : <EmptyState onPrompt={sendMessage} isSending={isSending} />}
             </div>
           </div>
 
@@ -210,48 +395,6 @@ export default function ChatWindow() {
       </div>
     </main>
   );
-
-  async function sendMessageWithoutStream(question, streamError) {
-    try {
-      const result = await queryEnterpriseAgent(question);
-
-      setMessages((current) => [
-        ...current,
-        {
-          id: createMessageId(),
-          role: "assistant",
-          content:
-            result.answer ||
-            "The agent completed the request, but did not return an answer.",
-          data: result,
-        },
-      ]);
-      setActiveTools(
-        (result.tool_calls || []).map((tool) => ({
-          name: tool,
-          status: "done",
-        })),
-      );
-    } catch (requestError) {
-      const message =
-        requestError instanceof Error
-          ? requestError.message
-          : streamError instanceof Error
-            ? streamError.message
-            : "Unable to reach the enterprise agent.";
-
-      setError(message);
-      setMessages((current) => [
-        ...current,
-        {
-          id: createMessageId(),
-          role: "assistant",
-          content: `I could not complete that request. ${message}`,
-          data: null,
-        },
-      ]);
-    }
-  }
 }
 
 function upsertTool(tools, name, status) {
@@ -270,7 +413,58 @@ function uniqueList(items) {
   return [...new Set(items)];
 }
 
-function Sidebar({ onPrompt, isSending }) {
+function getErrorMessage(error) {
+  return error instanceof Error
+    ? error.message
+    : "Unable to reach the chat service.";
+}
+
+function groupSessions(sessions) {
+  const groups = {};
+  const now = new Date();
+  const today = startOfDay(now);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const previousThirtyDays = new Date(today);
+  previousThirtyDays.setDate(previousThirtyDays.getDate() - 30);
+
+  for (const session of sessions) {
+    const updatedAt = new Date(session.updated_at || session.created_at);
+    let section = "Older";
+
+    if (updatedAt >= today) {
+      section = "Today";
+    } else if (updatedAt >= yesterday) {
+      section = "Yesterday";
+    } else if (updatedAt >= previousThirtyDays) {
+      section = "Previous 30 Days";
+    }
+
+    groups[section] ||= [];
+    groups[section].push(session);
+  }
+
+  return groups;
+}
+
+function startOfDay(value) {
+  const result = new Date(value);
+  result.setHours(0, 0, 0, 0);
+  return result;
+}
+
+function Sidebar({
+  activeSessionId,
+  isSending,
+  onDeleteSession,
+  onNewChat,
+  onPrompt,
+  onRenameSession,
+  onSelectSession,
+  sessions,
+}) {
+  const groupedSessions = groupSessions(sessions);
+
   return (
     <aside className="hidden h-screen min-h-0 overflow-hidden bg-[#f7f7f7] px-3 py-3 lg:flex lg:flex-col">
       <div className="shrink-0">
@@ -293,6 +487,8 @@ function Sidebar({ onPrompt, isSending }) {
             </button>
             <button
               type="button"
+              onClick={onNewChat}
+              disabled={isSending}
               className="grid h-8 w-8 place-items-center rounded-lg text-lg text-[#555] hover:bg-[#ececec]"
               aria-label="New chat"
             >
@@ -326,20 +522,45 @@ function Sidebar({ onPrompt, isSending }) {
       </div>
 
       <nav className="mt-6 flex-1 overflow-y-auto px-1 pb-4">
-        {Object.entries(HISTORY).map(([section, items]) => (
+        {Object.entries(groupedSessions).map(([section, items]) => (
           <div key={section} className="mb-7">
             <div className="mb-2 px-2 text-sm font-semibold">{section}</div>
             <div className="space-y-0.5">
-              {items.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => onPrompt(item)}
-                  disabled={isSending}
-                  className="block h-9 w-full truncate rounded-xl px-2 text-left text-[15px] transition hover:bg-[#eeeeee] disabled:opacity-60"
+              {items.map((session) => (
+                <div
+                  key={session.id}
+                  className={`group flex items-center rounded-lg pr-1 ${
+                    activeSessionId === session.id ? "bg-[#eeeeee]" : ""
+                  }`}
                 >
-                  {item}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => onSelectSession(session.id)}
+                    disabled={isSending}
+                    className="h-9 min-w-0 flex-1 truncate px-2 text-left text-[14px] transition disabled:opacity-60"
+                    title={session.title}
+                  >
+                    {session.title}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onRenameSession(session)}
+                    disabled={isSending}
+                    className="hidden h-7 px-1 text-[11px] text-[#666] hover:text-black group-hover:block"
+                    aria-label={`Rename ${session.title}`}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDeleteSession(session.id)}
+                    disabled={isSending}
+                    className="hidden h-7 px-1 text-base text-[#777] hover:text-black group-hover:block"
+                    aria-label={`Delete ${session.title}`}
+                  >
+                    ×
+                  </button>
+                </div>
               ))}
             </div>
           </div>
@@ -349,6 +570,8 @@ function Sidebar({ onPrompt, isSending }) {
       <div className="shrink-0 border-t border-black/5 pt-3">
         <button
           type="button"
+          onClick={onNewChat}
+          disabled={isSending}
           className="mb-1 flex w-full items-center gap-3 rounded-2xl bg-[#eeeeee] p-3 text-left"
         >
           <span className="grid h-9 w-9 place-items-center rounded-full bg-white text-lg">
@@ -366,11 +589,11 @@ function Sidebar({ onPrompt, isSending }) {
   );
 }
 
-function TopBar() {
+function TopBar({ title }) {
   return (
     <header className="flex h-14 shrink-0 items-center justify-between px-5">
       <button type="button" className="text-[17px] font-medium">
-        LogGPT <span className="text-[#777]">⌄</span>
+        {title || "LogGPT"} <span className="text-[#777]">⌄</span>
       </button>
       <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#e6d7c8] to-[#1f2937]" />
     </header>

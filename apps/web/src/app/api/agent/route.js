@@ -78,22 +78,30 @@ async function readJson(response) {
 function normalizeAgentPayload(payload) {
   return {
     answer: normalizeAnswer(payload?.answer || payload?.detail || ""),
+    status: payload?.status || "success",
     tool_calls: payload?.tool_calls || [],
+    tool_results: payload?.tool_results || [],
+    warnings: payload?.warnings || [],
     logs: payload?.logs || [],
     aggregations: payload?.aggregations || [],
     sources: payload?.sources || [],
     dashboard: payload?.dashboard || null,
+    remediation: payload?.remediation || null,
   };
 }
 
 function normalizeAnalysisPayload(payload) {
   return {
     answer: normalizeAnswer(payload?.answer || payload?.detail || ""),
+    status: "success",
     tool_calls: payload?.intent ? [`router:${payload.intent}`] : [],
+    tool_results: [],
+    warnings: [],
     logs: payload?.logs || payload?.evidence || [],
     aggregations: payload?.aggregations || [],
     sources: payload?.sources || [],
     dashboard: payload?.dashboard || null,
+    remediation: null,
   };
 }
 
