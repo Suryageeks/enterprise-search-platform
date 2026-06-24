@@ -56,8 +56,11 @@ class RedisConsumer:
             
             except asyncio.CancelledError:
                 raise
-            except Exception:
-                logger.exception("Error in Redis consumer loop")
+            except Exception as exc:
+                logger.error(
+                    "Redis consumer loop failed error_type=%s",
+                    type(exc).__name__,
+                )
                 await asyncio.sleep(2)
     
     async def _handle_message(self, client, stream_name: str, msg_id: str, payload: dict) -> None:
@@ -66,7 +69,11 @@ class RedisConsumer:
             await ingestion_processor.process(message)
             await client.xack(stream_name, settings.redis_consumer_group, msg_id)
             logger.info("Acknowledged message %s for job %s", msg_id, message.jobId)
-        except Exception:
-            logger.exception("Error processing message %s: %s", msg_id, payload)
+        except Exception as exc:
+            logger.error(
+                "Redis message failed id=%s error_type=%s",
+                msg_id,
+                type(exc).__name__,
+            )
 
 redis_consumer = RedisConsumer()

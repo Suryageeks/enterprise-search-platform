@@ -35,6 +35,16 @@ class Settings(BaseSettings):
     embedding_batch_size: int = 32
     embedding_device: str = "cpu"
 
+    pii_masking_enabled: bool = True
+    pii_model_name: str = (
+        "Isotonic/distilbert_finetuned_ai4privacy_v2"
+    )
+
+    pii_score_threshold: float = 0.60
+    pii_max_tokens: int = 384
+    pii_stride: int = 32
+    pii_device: str = "cpu"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

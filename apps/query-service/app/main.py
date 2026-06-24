@@ -15,6 +15,7 @@ from app.memory.checkpoint import (
     open_checkpoint_store,
 )
 from app.observability.mlflow import configure_mlflow
+from app.db.read_only_session import close_read_only_engine
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -30,6 +31,7 @@ async def lifespan(app: FastAPI):
         yield
     finally:
         await close_checkpoint_store()
+        await close_read_only_engine()
 
 app = FastAPI(
     title="Enterprise Search Query Service",

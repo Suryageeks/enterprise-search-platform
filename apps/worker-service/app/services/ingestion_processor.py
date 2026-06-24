@@ -12,8 +12,12 @@ from app.clients.embeddings_client import embeddings_client
 from app.clients.postgres_client import postgres_status_client
 from app.clients.qdrant_client import qdrant_vector_client
 from app.clients.s3_client import s3_client
+from app.core.config import settings
 from app.schemas.ingestion import IngestionJobMessage
 from app.services.file_parser import file_parser
+from app.services.pii_masking_service import (
+    pii_masking_service,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,22 +56,28 @@ class IngestionProcessor:
         try:
             async for event in self.stream(message):
                 logger.info(
-                    "Ingestion event job=%s doc=%s step=%s payload=%s",
+                    "Ingestion event job=%s doc=%s step=%s",
                     message.jobId,
                     message.docId,
                     event["step"],
-                    event,
                 )
         except Exception as exc:
-            logger.exception(
-                "Ingestion failed for job=%s doc=%s",
+            logger.error(
+                "Ingestion failed job=%s doc=%s error_type=%s",
                 message.jobId,
                 message.docId,
+                type(exc).__name__,
             )
+
+            safe_error = await asyncio.to_thread(
+                pii_masking_service.mask_error,
+                exc,
+            )
+
             await postgres_status_client.mark_failed(
                 message.jobId,
                 message.docId,
-                str(exc),
+                safe_error,
             )
             raise
 
@@ -115,7 +125,6 @@ class IngestionProcessor:
                 {
                     "step": "download_file",
                     "status": "ok",
-                    "file_path": message.filePath,
                     "bytes": len(file_bytes),
                 }
             ],
@@ -128,14 +137,19 @@ class IngestionProcessor:
             message.fileName,
             self._require_state_value(state, "file_bytes"),
         )
+        sanitized_text = await asyncio.to_thread(
+            pii_masking_service.mask_text,
+            extracted_text,
+        )
 
         return {
-            "extracted_text": extracted_text,
+            "extracted_text": sanitized_text,
             "events": events + [
                 {
                     "step": "extract_text",
                     "status": "ok",
-                    "characters": len(extracted_text),
+                    "characters": len(sanitized_text),
+                    "pii_masked": settings.pii_masking_enabled,
                 }
             ],
         }
@@ -148,6 +162,11 @@ class IngestionProcessor:
         if not extracted_text:
             raise ValueError("Extracted text is empty")
 
+        sanitized_file_name = await asyncio.to_thread(
+            pii_masking_service.mask_text,
+            message.fileName,
+        )
+
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=self.chunk_size,
             chunk_overlap=self.chunk_overlap,
@@ -159,9 +178,9 @@ class IngestionProcessor:
                 "job_id": message.jobId,
                 "doc_id": message.docId,
                 "emp_id": message.empId,
-                "file_name": message.fileName,
-                "file_path": message.filePath,
+                "file_name": sanitized_file_name,
                 "upload_type": message.uploadType,
+                "pii_masked": settings.pii_masking_enabled,
             },
         )
 
@@ -208,10 +227,10 @@ class IngestionProcessor:
                             "job_id": message.jobId,
                             "doc_id": message.docId,
                             "emp_id": message.empId,
-                            "file_name": message.fileName,
-                            "file_path": message.filePath,
+                            "file_name": doc.metadata["file_name"],
                             "upload_type": message.uploadType,
                             "chunk_index": doc.metadata["chunk_index"],
+                            "pii_masked": settings.pii_masking_enabled,
                         },
                     }
                 )

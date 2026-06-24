@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from opensearchpy import AsyncOpenSearch
 
 from app.core.config import settings
+from app.services.pii_masking_service import (
+    pii_masking_service,
+)
 
 
 class OpenSearchLogClient:
@@ -24,9 +28,14 @@ class OpenSearchLogClient:
         return bool(await self._client.ping())
 
     async def index_log_event(self, event: dict[str, Any]) -> None:
+        sanitized_event = await asyncio.to_thread(
+            pii_masking_service.mask_mapping,
+            event,
+        )
+
         await self._client.index(
             index=settings.opensearch_log_index,
-            body=event,
+            body=sanitized_event,
             refresh=False,
         )
 
@@ -34,8 +43,13 @@ class OpenSearchLogClient:
         if not events:
             return
 
+        sanitized_events = await asyncio.to_thread(
+            pii_masking_service.mask_mappings,
+            events,
+        )
+
         operations: list[dict[str, Any]] = []
-        for event in events:
+        for event in sanitized_events:
             operations.append({"index": {"_index": settings.opensearch_log_index}})
             operations.append(event)
 

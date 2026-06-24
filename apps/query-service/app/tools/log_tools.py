@@ -4,9 +4,24 @@ from langchain_core.tools import tool
 
 from app.client.opensearch_client import opensearch_log_client
 from app.core.config import settings
-from app.schemas.logs import ParsedLogQuery
 from app.schemas.execution import ToolErrorCode
+from app.schemas.logs import ParsedLogQuery
+from app.schemas.log_tools import (
+    AggregationField,
+    LogLevel,
+    SafeLogAggregationInput,
+    SafeLogSearchInput,
+)
 from app.services.tool_result_service import execute_tool, tool_error
+
+
+def _tool_validation_error(tool_name: str, error: Exception) -> str:
+    return tool_error(
+        tool=tool_name,
+        code=ToolErrorCode.INVALID_TOOL_INPUT,
+        message="Tool input did not match the allowed schema",
+        details={"error_type": type(error).__name__},
+    )
 
 
 def _parse_basic_log_query(query: str, size: int) -> ParsedLogQuery:
@@ -68,8 +83,16 @@ def _parse_basic_log_query(query: str, size: int) -> ParsedLogQuery:
     )
 
 
-@tool
-async def search_logs_tool(query: str, size: int = 10) -> str:
+@tool(args_schema=SafeLogSearchInput)
+async def search_logs_tool(
+    query: str = "",
+    service: str | None = None,
+    environment: str | None = None,
+    level: LogLevel | None = None,
+    trace_id: str | None = None,
+    request_id: str | None = None,
+    size: int = 10,
+) -> str:
     """
     Search normalized logs in OpenSearch.
 
@@ -77,18 +100,32 @@ async def search_logs_tool(query: str, size: int = 10) -> str:
     failures, traces, errors, exceptions, requests, or services.
     """
 
-    if not query.strip():
+    if not any(
+        [query.strip(), service, environment, level, trace_id, request_id]
+    ):
         return tool_error(
             tool="search_logs_tool",
             code=ToolErrorCode.INVALID_TOOL_INPUT,
-            message="Log search query cannot be empty",
+            message="At least one log search term or filter is required",
         )
 
     size = max(1,min(size, settings.max_log_search_size))
 
     async def operation() -> dict:
-
-        parsed_query = _parse_basic_log_query(query=query, size=size)
+        inferred_query = _parse_basic_log_query(query=query, size=size)
+        parsed_query = inferred_query.model_copy(
+            update={
+                "service": service or inferred_query.service,
+                "environment": environment,
+                "level": (
+                    level.value
+                    if isinstance(level, LogLevel)
+                    else level or inferred_query.level
+                ),
+                "trace_id": trace_id,
+                "request_id": request_id,
+            }
+        )
 
         result = await opensearch_log_client.search_logs(parsed_query=parsed_query)
         hits = result.get("hits", {}).get("hits", [])
@@ -130,8 +167,20 @@ async def search_logs_tool(query: str, size: int = 10) -> str:
     )
 
 
-@tool
-async def aggregate_logs_tool(field: str, query: str = "", size: int = 10) -> str:
+search_logs_tool.handle_validation_error = lambda error: _tool_validation_error(
+    "search_logs_tool",
+    error,
+)
+
+
+@tool(args_schema=SafeLogAggregationInput)
+async def aggregate_logs_tool(
+    field: AggregationField,
+    query: str = "",
+    service: str | None = None,
+    environment: str | None = None,
+    size: int = 10,
+) -> str:
     """
     Aggregate logs by a field.
 
@@ -151,19 +200,18 @@ async def aggregate_logs_tool(field: str, query: str = "", size: int = 10) -> st
         "exceptionType": "exceptionType",
     }
 
-    if field not in field_map:
-        return tool_error(
-            tool="aggregate_logs_tool",
-            code=ToolErrorCode.INVALID_TOOL_INPUT,
-            message=f"Unsupported aggregation field: {field}",
-            details={"allowed_fields": sorted(field_map)},
-        )
-
     size = max(1,min(size, settings.max_aggregation_size))
-    opensearch_field = field_map.get(field, field)
+    field_value = field.value if isinstance(field, AggregationField) else field
+    opensearch_field = field_map[field_value]
 
     async def operation() -> dict:
-        parsed_query = _parse_basic_log_query(query=query, size=1)
+        inferred_query = _parse_basic_log_query(query=query, size=1)
+        parsed_query = inferred_query.model_copy(
+            update={
+                "service": service or inferred_query.service,
+                "environment": environment,
+            }
+        )
 
         result = await opensearch_log_client.client.search(
             index=settings.opensearch_index,
@@ -204,3 +252,9 @@ async def aggregate_logs_tool(field: str, query: str = "", size: int = 10) -> st
         failure_code=ToolErrorCode.LOG_AGGREGATION_FAILED,
         failure_message="Unable to aggregate logs",
     )
+
+
+aggregate_logs_tool.handle_validation_error = lambda error: _tool_validation_error(
+    "aggregate_logs_tool",
+    error,
+)

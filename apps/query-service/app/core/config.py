@@ -38,6 +38,11 @@ class Settings(BaseSettings):
         "postgresql://admin:admin@localhost:5433/aisearchdb"
     )
 
+    agent_read_database_url: str = (
+        "postgresql+asyncpg://agent_reader:"
+        "agent_reader_local_password@localhost:5433/aisearchdb"
+    )
+
     mlflow_enabled: bool = True
     mlflow_tracking_uri: str = "http://localhost:5050"
     mlflow_experiment_name: str = "enterprise-log-agent"
