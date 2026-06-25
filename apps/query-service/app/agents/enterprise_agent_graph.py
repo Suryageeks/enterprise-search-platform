@@ -47,11 +47,13 @@ from app.services.remediation_service import (
 )
 
 enterprise_agent_graph: CompiledStateGraph | None = None
+MAX_TOOL_ROUNDS = 3
 
 class EnterpriseAgentState(TypedDict, total = False):
     messages: Annotated[list[BaseMessage], add_messages]
     classification: dict[str, Any]
     remediation: dict[str, Any] | None
+    tool_rounds: int
 
 tools = [
     search_logs_tool,
@@ -83,13 +85,31 @@ async def call_model(state: EnterpriseAgentState) -> EnterpriseAgentState:
         )
     )
 
-    response = await llm_service.ainvoke_with_tools(
-        tools,
-        [
-            system_message,
-            *state["messages"]
-        ]
-    )
+    tool_rounds = state.get("tool_rounds", 0)
+    messages = [system_message, *state["messages"]]
+
+    if tool_rounds >= MAX_TOOL_ROUNDS:
+        response = await llm_service.ainvoke(
+            [
+                SystemMessage(
+                    content=(
+                        f"{system_message.content}\n\n"
+                        "TOOL LIMIT REACHED:\n"
+                        "Do not request another tool. Produce the final answer "
+                        "using only evidence already returned in this turn."
+                    )
+                ),
+                *state["messages"],
+            ]
+        )
+        response = AIMessage(
+            content=(
+                extract_message_text(response.content).strip()
+                or render_tool_limit_answer(state["messages"])
+            )
+        )
+    else:
+        response = await llm_service.ainvoke_with_tools(tools, messages)
 
     has_tool_calls = bool(
         getattr(response,"tool_calls", None)
@@ -113,8 +133,55 @@ async def call_model(state: EnterpriseAgentState) -> EnterpriseAgentState:
         }
 
     return {
-        "messages": [response]
+        "messages": [response],
+        "tool_rounds": tool_rounds + int(has_tool_calls),
     }
+
+
+def render_tool_limit_answer(messages: list[BaseMessage]) -> str:
+    evidence = collect_evidence(current_turn_messages(messages))
+    logs = [item for item in evidence if item.get("type") == "log"]
+    aggregations = [
+        item for item in evidence if item.get("type") == "aggregation"
+    ]
+
+    if not evidence:
+        return (
+            "No relevant authorized evidence was found before the tool-call "
+            "limit was reached."
+        )
+
+    lines = [
+        "### Summary",
+        "The search completed with retrieved evidence.",
+        "",
+        "### Evidence",
+    ]
+
+    for log in logs[:5]:
+        identity = log.get("trace_id") or log.get("request_id") or "no trace ID"
+        lines.append(
+            "- "
+            f"{log.get('service') or 'unknown service'} "
+            f"[{log.get('status_code') or log.get('level') or 'unknown status'}]: "
+            f"{log.get('message') or 'No message'} ({identity})"
+        )
+
+    for aggregation in aggregations[:2]:
+        buckets = ", ".join(
+            f"{bucket.get('key')}: {bucket.get('count')}"
+            for bucket in aggregation.get("buckets", [])[:8]
+        )
+        lines.append(f"- {aggregation.get('field')}: {buckets}")
+
+    lines.extend(
+        [
+            "",
+            "### Limitation",
+            "Further tool calls were stopped after the safe per-request limit.",
+        ]
+    )
+    return "\n".join(lines)
 
 def should_continue(state: EnterpriseAgentState) -> str:
     last_message = state["messages"][-1]
@@ -177,6 +244,7 @@ async def classify_request(state: EnterpriseAgentState) -> EnterpriseAgentState:
             classification.model_dump(mode="json")
         ),
         "remediation": None,
+        "tool_rounds": 0,
     }
 
 

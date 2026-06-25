@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   createChatSession,
   deleteChatSession,
@@ -47,13 +47,6 @@ export default function ChatWindow() {
   const activeSession = sessions.find(
     (session) => session.id === activeSessionId,
   );
-  const latestToolCalls = useMemo(() => {
-    const latest = messages
-      .filter((message) => message.role === "assistant" && message.data)
-      .at(-1);
-    return latest?.data?.tool_calls || [];
-  }, [messages]);
-
   useEffect(() => {
     let cancelled = false;
 
@@ -384,8 +377,6 @@ export default function ChatWindow() {
             error={error}
             input={input}
             isSending={isSending}
-            activeTools={activeTools}
-            latestToolCalls={latestToolCalls}
             onChange={setInput}
             onKeyDown={handleKeyDown}
             onSubmit={handleSubmit}
@@ -648,8 +639,6 @@ function Composer({
   error,
   input,
   isSending,
-  activeTools,
-  latestToolCalls,
   onChange,
   onKeyDown,
   onSubmit,
@@ -664,8 +653,6 @@ function Composer({
               {error}
             </div>
           : null}
-        {activeTools.length ? <ToolStatus tools={activeTools} compact /> : null}
-
         <form
           onSubmit={onSubmit}
           className="pointer-events-auto rounded-[28px] border border-black/5 bg-white p-3 shadow-[0_12px_40px_rgba(0,0,0,0.10)]"
@@ -687,14 +674,6 @@ function Composer({
               >
                 +
               </button>
-              {latestToolCalls.slice(0, 2).map((tool) => (
-                <span
-                  key={tool}
-                  className="hidden rounded-full border border-black/10 px-3 py-1 text-xs text-[#777] sm:inline-flex"
-                >
-                  {tool}
-                </span>
-              ))}
             </div>
             <div className="flex items-center gap-2">
               <button

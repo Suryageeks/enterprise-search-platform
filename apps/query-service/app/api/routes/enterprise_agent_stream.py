@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import HumanMessage
+from langgraph.errors import GraphRecursionError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.tool_result_service import parse_tool_result
@@ -279,6 +280,28 @@ async def stream_agent_events(
             graph_config["configurable"]["thread_id"],
         )
         raise
+
+    except GraphRecursionError:
+        logger.exception(
+            "Agent exceeded the tool-call limit for thread %s",
+            graph_config["configurable"]["thread_id"],
+        )
+
+        yield sse_event(
+            "error",
+            {
+                "detail": (
+                    "The agent repeated tool calls and could not finish. "
+                    "Please retry the request."
+                ),
+                "code": "tool_loop_limit",
+                "session_id": (
+                    str(session_id)
+                    if session_id is not None
+                    else None
+                ),
+            },
+        )
 
     except Exception:
         logger.exception(

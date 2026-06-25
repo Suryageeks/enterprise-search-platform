@@ -108,6 +108,14 @@ function StructuredPreview({ data }) {
   const hasRemediation = Boolean(data.remediation);
   const hasTools = data.tool_calls?.length > 0;
   const warnings = data.warnings || [];
+  const stats = [
+    logsCount ? { label: "Logs", value: logsCount } : null,
+    sourcesCount ? { label: "Sources", value: sourcesCount } : null,
+    aggregationsCount
+      ? { label: "Aggregations", value: aggregationsCount }
+      : null,
+    hasDashboard ? { label: "Dashboard", value: "Ready" } : null,
+  ].filter(Boolean);
 
   if (
     !logsCount &&
@@ -158,15 +166,17 @@ function StructuredPreview({ data }) {
           </div>
         : null}
 
-      <div className="grid gap-2 sm:grid-cols-4">
-        <PreviewStat label="Logs" value={logsCount} />
-        <PreviewStat label="Sources" value={sourcesCount} />
-        <PreviewStat label="Aggregations" value={aggregationsCount} />
-        <PreviewStat
-          label="Dashboard"
-          value={hasDashboard ? "Ready" : "None"}
-        />
-      </div>
+      {stats.length
+        ? <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {stats.map((stat) => (
+              <PreviewStat
+                key={stat.label}
+                label={stat.label}
+                value={stat.value}
+              />
+            ))}
+          </div>
+        : null}
 
       {hasRemediation
         ? <div className="text-xs font-medium text-emerald-700">
