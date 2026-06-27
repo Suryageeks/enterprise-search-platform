@@ -1,0 +1,27 @@
+name: Test Local Mac Docker Runner
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: [self-hosted, local, docker]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Test runner
+        run: |
+          echo "GitHub Actions running on my local Mac Docker runner"
+          hostname
+          whoami
+          pwd
+
+      - name: Test Docker access
+        run: |
+          docker ps
+          docker version
