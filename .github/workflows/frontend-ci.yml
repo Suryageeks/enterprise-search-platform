@@ -35,45 +35,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install TruffleHog
+      - name: Install Gitleaks
         run: |
-          mkdir -p "$RUNNER_TEMP/bin"
-          curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b "$RUNNER_TEMP/bin"
+          curl -sSfL https://raw.githubusercontent.com/gitleaks/gitleaks/master/scripts/install.sh | sh -s -- -b "$RUNNER_TEMP/bin"
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
       
-      - name: Run TruffleHog on pull request
-        if: github.event_name == 'pull_request'
-        run: |
-          trufflehog git file://. \
-            --since-commit "${{ github.event.pull_request.base.sha }}" \
-            --branch "${{ github.event.pull_request.head.sha }}" \
-            --fail \
-            --no-update \
-            --github-actions \
-            --only-verified
-
-      - name: Run TruffleHog on push
-        if: github.event_name == 'push'
-        run: |
-          trufflehog git file://. \
-            --since-commit "${{ github.event.before }}" \
-            --branch "${{ github.sha }}" \
-            --fail \
-            --no-update \
-            --github-actions \
-            --only-verified
-
-      - name: Run TruffleHog manually
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          trufflehog filesystem . \
-            --fail \
-            --no-update \
-            --github-actions \
-            --only-verified
+      - name: Run Gitleaks
+        run: gitleaks detect --source . --verbose --redact
   
   frontend:
-    name: Frontend Checks and Build
+    name: Lint Frontend
     runs-on: [self-hosted, local, docker]
 
     defaults:
@@ -95,8 +66,52 @@ jobs:
       - name: Run Biome lint
         run: npm run lint
 
+  security-scan:
+    name: Frontend Dependency Scan
+    runs-on: [self-hosted, local, docker]
+
+    defaults:
+      run:
+        working-directory: apps/web
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Run npm audit
         run: npm audit --audit-level=high
+
+  build:
+    name: Build Frontend
+    runs-on: [self-hosted, local, docker]
+    needs:
+      - frontend
+      - secret-scan
+      - security-scan
+
+    defaults:
+      run:
+        working-directory: apps/web
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm ci
       
       - name: Build frontend
         run: npm run build
