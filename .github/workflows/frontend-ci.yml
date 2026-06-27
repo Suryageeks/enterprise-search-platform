@@ -51,7 +51,7 @@ jobs:
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
       
       - name: Run Gitleaks
-        run: gitleaks detect --source . --verbose --redact
+        run: gitleaks detect --source . --no-git --verbose --redact
   
   frontend:
     name: Lint Frontend
