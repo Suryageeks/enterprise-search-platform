@@ -1,0 +1,108 @@
+name: Frontend-CI
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "apps/web/**"
+      - ".github/workflows/frontend-ci.yml"
+  
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/web/**"
+      - ".github/workflows/frontend-ci.yml"
+  
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint Frontend
+    runs-on: [self-hosted, local, docker]
+
+    defaults:
+      run:
+        working-directory: apps/web
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependancy-path: apps/web/package-lock.json
+      
+      - name: Install dependancies
+        run: npm ci
+      
+      - name: Run Biome Lint
+        run: npm run lint
+  
+  secret-scan:
+    name: Secret Scan
+    runs-on: [self-hosted, local, docker]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: .
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra-args: --only-verified
+  
+  security-scan:
+    name: Frontend Dependancy Scan
+    runs-on: [self-hosted, local, docker]
+
+    defaults:
+      run:
+        working-directory: apps/web
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run npm audit
+        uses: npm audit --audit-level=high
+  
+  build:
+    name: Build Frontend
+    runs-on: [self-hosted, local, docker]
+    needs:
+      - lint
+      - secret-scan
+      - security-scan
+    
+    defaults:
+      run:
+        working-directory: apps/web
+    
+    steps:
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependancy-path: apps/web/package-lock.json
+      
+      - name: Install dependancies
+        run: npm ci
+      
+      - name: Build Frontend
+        uses: npm run build
