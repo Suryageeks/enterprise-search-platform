@@ -49,13 +49,15 @@ pipeline {
                     )
                 ]) {
                     sh '''
-                        docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+                        docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
 
-                        REMOTE_IMAGE="${DOCKER_USERNAME}/${IMAGE_NAME}:${BUILD_NUMBER}"
+                        REMOTE_IMAGE="$DOCKER_USERNAME/$IMAGE_NAME"
 
-                        docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${REMOTE_IMAGE}:${BUILD_NUMBER}
+                        docker tag "$IMAGE_NAME:$BUILD_NUMBER" "$REMOTE_IMAGE:$BUILD_NUMBER"
 
-                        docker push ${REMOTE_IMAGE}:${BUILD_NUMBER}
+                        docker push "$REMOTE_IMAGE:$BUILD_NUMBER"
+
+                        docker image rm "$REMOTE_IMAGE:$BUILD_NUMBER" || true
 
                         docker logout
                     '''
@@ -65,7 +67,7 @@ pipeline {
 
         stage('Clean Docker Image') {
             steps {
-                sh 'docker rmi ${IMAGE_NAME}:${BUILD_NUMBER} || true'
+                sh 'docker rmi "$IMAGE_NAME:$BUILD_NUMBER" || true'
             }
         }
     }
