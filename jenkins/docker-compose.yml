@@ -2,6 +2,7 @@ services:
   docker-agent:
     image: docker:dind
     container_name: jenkins-docker-agent
+    hostname: docker
     privileged: true
     restart: unless-stopped
     environment:
@@ -10,12 +11,15 @@ services:
       - docker-certs:/certs/client
       - docker-data:/var/lib/docker
     networks:
-      - jenkins-network
+      jenkins-network:
+        aliases:
+          - docker
     healthcheck:
       test: ["CMD", "docker", "info"]
       interval: 30s
       timeout: 10s
       retries: 5
+      start_period: 20s
     
   jenkins:
     build:
@@ -27,7 +31,7 @@ services:
       docker-agent:
         condition: service_healthy
     environment:
-      DOCKER_HOST: tcp://docker-agent:2376
+      DOCKER_HOST: tcp://docker:2376
       DOCKER_CERT_PATH: /certs/client
       DOCKER_TLS_VERIFY: "1"
     ports:
