@@ -1,0 +1,52 @@
+pipeline {
+    agent any
+
+    environment {
+        SERVICE_DIR = 'apps/auth'
+        IMAGE_NAME = 'auth-service'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build JAR') {
+            steps {
+                dir("${SERVICE_DIR}") {
+                    sh 'chmod +x mvnw'
+                    sh './mvnw --batch-mode clean package -DskipTests'
+                }
+            }
+        }
+
+        stage('Archive JAR') {
+            steps {
+                archiveArtifacts(
+                    artifacts: "${SERVICE_DIR}/target/*.jar",
+                    fingerprint: true
+                )
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                dir("${SERVICE_DIR}") {
+                    sh "docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ."
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Created Docker image: ${IMAGE_NAME}:${BUILD_NUMBER}"
+        }
+
+        failure {
+            echo "Build failed. Please check the logs for details."
+        }
+    }
+}
