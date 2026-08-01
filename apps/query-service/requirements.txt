@@ -12,7 +12,6 @@ langchain-google-genai
 
 qdrant-client
 transformers
-torch
 tokenizers
 
 langgraph

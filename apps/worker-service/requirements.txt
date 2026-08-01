@@ -18,6 +18,5 @@ langchain-redis
 langchain-text-splitters
 qdrant-client
 transformers
-torch
 tokenizers
 opensearch-py[async]

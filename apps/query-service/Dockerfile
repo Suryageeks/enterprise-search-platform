@@ -1,3 +1,25 @@
+# syntax=docker/dockerfile:1.7
+
+FROM python:3.12-slim AS wheel-builder
+
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /build
+
+COPY requirements.txt requirements-torch.txt ./
+
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip wheel \
+        --wheel-dir=/wheelhouse \
+        --index-url=https://download.pytorch.org/whl/cpu \
+        --requirement requirements-torch.txt
+
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip wheel \
+        --wheel-dir=/wheelhouse \
+        --requirement requirements.txt
+
+
 FROM python:3.12-slim AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -13,10 +35,16 @@ RUN apt-get update \
 
 WORKDIR /app
 
-COPY requirements.txt ./
-RUN pip install --no-cache-dir \
-        --index-url https://download.pytorch.org/whl/cpu torch \
-    && pip install --no-cache-dir -r requirements.txt
+COPY --from=wheel-builder /wheelhouse /wheelhouse
+COPY requirements.txt requirements-torch.txt ./
+
+RUN pip install \
+        --no-cache-dir \
+        --no-index \
+        --find-links=/wheelhouse \
+        --requirement requirements-torch.txt \
+        --requirement requirements.txt \
+    && rm -rf /wheelhouse
 
 COPY --chown=app:app app ./app
 

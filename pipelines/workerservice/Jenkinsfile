@@ -17,8 +17,23 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 dir("${SERVICE_DIR}") {
-                    sh "docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ."
+                    sh '''
+                        DOCKER_BUILDKIT=1 docker build \
+                            --tag "$IMAGE_NAME:$BUILD_NUMBER" \
+                            .
+                    '''
                 }
+            }
+        }
+
+        stage('Validate Python Code') {
+            steps {
+                sh '''
+                    docker run --rm \
+                        --entrypoint python \
+                        "$IMAGE_NAME:$BUILD_NUMBER" \
+                        -m compileall -q /app/app
+                '''
             }
         }
 
@@ -32,17 +47,28 @@ pipeline {
                     )
                 ]) {
                     sh '''
-                        docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
-
                         REMOTE_IMAGE="$DOCKER_USERNAME/$IMAGE_NAME"
 
-                        docker tag "$IMAGE_NAME:$BUILD_NUMBER" "$REMOTE_IMAGE:$BUILD_NUMBER"
+                        cleanup_registry() {
+                            docker image rm \
+                                "$REMOTE_IMAGE:$BUILD_NUMBER" \
+                                >/dev/null 2>&1 || true
+
+                            docker logout >/dev/null 2>&1 || true
+                        }
+
+                        trap cleanup_registry EXIT
+
+                        echo "$DOCKER_PASSWORD" |
+                            docker login \
+                                --username "$DOCKER_USERNAME" \
+                                --password-stdin
+
+                        docker tag \
+                            "$IMAGE_NAME:$BUILD_NUMBER" \
+                            "$REMOTE_IMAGE:$BUILD_NUMBER"
 
                         docker push "$REMOTE_IMAGE:$BUILD_NUMBER"
-
-                        docker image rm "$REMOTE_IMAGE:$BUILD_NUMBER" || true
-
-                        docker logout
                     '''
                 }
             }
@@ -51,10 +77,11 @@ pipeline {
 
     post {
         always {
-            sh 'docker rmi "$IMAGE_NAME:$BUILD_NUMBER" || true'
+            sh 'docker image rm "$IMAGE_NAME:$BUILD_NUMBER" || true'
         }
+
         success {
-            echo "Created Docker image: ${IMAGE_NAME}:${BUILD_NUMBER}"
+            echo "Created and pushed Docker image: ${IMAGE_NAME}:${BUILD_NUMBER}"
         }
 
         failure {
