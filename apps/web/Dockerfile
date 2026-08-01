@@ -5,6 +5,10 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
+FROM dependencies AS ci
+
+COPY . .
+
 FROM node:22-alpine AS build
 
 WORKDIR /app

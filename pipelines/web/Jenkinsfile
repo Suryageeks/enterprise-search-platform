@@ -19,7 +19,7 @@ pipeline {
                 dir("$SERVICE_DIR") {
                     sh '''
                         docker build \
-                            --target dependencies \
+                            --target ci \
                             -t "$CI_IMAGE_NAME:$BUILD_NUMBER" \
                             .
                     '''
@@ -32,10 +32,8 @@ pipeline {
                 dir("$SERVICE_DIR") {
                     sh '''
                         docker run --rm \
-                            -v "$PWD:/workspace:ro" \
-                            --workdir /workspace \
                             "$CI_IMAGE_NAME:$BUILD_NUMBER" \
-                            /app/node_modules/.bin/biome check .
+                            npm run lint
                     '''
                 }
             }
