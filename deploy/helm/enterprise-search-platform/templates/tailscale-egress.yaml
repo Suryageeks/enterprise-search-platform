@@ -1,0 +1,33 @@
+{{- if .Values.tailscale.enabled }}
+apiVersion: tailscale.com/v1alpha1
+kind: ProxyGroup
+metadata:
+  name: {{ .Values.tailscale.proxyGroupName }}
+  labels:
+    {{- include "enterprise-search.labels" . | nindent 4 }}
+spec:
+  type: egress
+  replicas: {{ .Values.tailscale.replicas }}
+
+{{- range $name, $dependency := .Values.tailscale.dependencies }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "enterprise-search.labels" $ | nindent 4 }}
+  annotations:
+    tailscale.com/tailnet-fqdn: {{ $.Values.tailscale.dockerHostFqdn | quote }}
+    tailscale.com/proxy-group: {{ $.Values.tailscale.proxyGroupName | quote }}
+
+spec:
+  type: ExternalName
+  externalName: placeholder.invalid
+
+  ports:
+    - name: tcp
+      port: {{ $dependency.port }}
+      protocol: TCP
+{{- end }}
+{{- end }}

@@ -1,0 +1,34 @@
+global:
+  imageRegistry: docker.io/replace-with-dockerhub-namespace
+
+ingress:
+  enabled: true
+
+tailscale:
+  enabled: true
+  dockerHostFqdn: aryas-macbook-air.REPLACE_WITH_TAILNET.ts.net
+
+services:
+  gateway:
+    image:
+      tag: replace-with-git-sha
+
+  web:
+    image:
+      tag: replace-with-git-sha
+
+  auth:
+    image:
+      tag: replace-with-git-sha
+
+  document:
+    image:
+      tag: replace-with-git-sha
+
+  query-service:
+    image:
+      tag: replace-with-git-sha
+
+  worker-service:
+    image:
+      tag: replace-with-git-sha

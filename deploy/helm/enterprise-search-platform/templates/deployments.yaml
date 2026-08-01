@@ -1,0 +1,114 @@
+{{- range $name, $service := .Values.services }}
+{{- if $service.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "enterprise-search.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  replicas: {{ $service.replicaCount }}
+  revisionHistoryLimit: 2
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ $.Release.Name }}
+      app.kubernetes.io/component: {{ $name }}
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "enterprise-search.name" $ }}
+        app.kubernetes.io/instance: {{ $.Release.Name }}
+        app.kubernetes.io/component: {{ $name }}
+      annotations:
+        checksum/config: {{ $service.config | default dict | toJson | sha256sum }}
+        {{- if eq $name "gateway" }}
+        checksum/gateway-routing: {{ include (print $.Template.BasePath "/gateway-config.yaml") $ | sha256sum }}
+        {{- end }}
+
+    spec:
+      serviceAccountName: {{ $service.serviceAccountName }}
+
+      imagePullSecrets:
+        {{- toYaml $.Values.global.imagePullSecrets | nindent 8 }}
+
+      nodeSelector:
+        {{- toYaml $.Values.global.nodeSelector | nindent 8 }}
+
+      terminationGracePeriodSeconds: 30
+
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: {{ $name }}
+          image: >-
+            {{ $.Values.global.imageRegistry }}/{{ $service.image.repository }}:{{ $service.image.tag }}
+          imagePullPolicy: {{ $.Values.global.imagePullPolicy }}
+
+          ports:
+            - name: http
+              containerPort: {{ $service.containerPort }}
+              protocol: TCP
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+
+          {{- if $service.config }}
+          envFrom:
+            - configMapRef:
+                name: {{ $name }}-config
+            {{- if $service.secretName }}
+            - secretRef:
+                name: {{ $service.secretName }}
+            {{- end }}
+          {{- else if $service.secretName }}
+          envFrom:
+            - secretRef:
+                name: {{ $service.secretName }}
+          {{- end }}
+
+          readinessProbe:
+            {{- toYaml $service.readinessProbe | nindent 12 }}
+
+          livenessProbe:
+            {{- toYaml $service.livenessProbe | nindent 12 }}
+
+          resources:
+            {{- toYaml $service.resources | nindent 12 }}
+
+          {{- if eq $name "gateway" }}
+          volumeMounts:
+            - name: gateway-routing
+              mountPath: /etc/traefik/traefik.yml
+              subPath: traefik.yml
+              readOnly: true
+
+            - name: gateway-routing
+              mountPath: /etc/traefik/dynamic.yml
+              subPath: dynamic.yml
+              readOnly: true
+          {{- end }}
+
+      {{- if eq $name "gateway" }}
+      volumes:
+        - name: gateway-routing
+          configMap:
+            name: gateway-routing
+      {{- end }}
+{{- end }}
+{{- end }}

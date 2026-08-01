@@ -1,0 +1,337 @@
+global:
+  imageRegistry: docker.io/replace-with-dockerhub-namespace
+
+  imagePullSecrets:
+    - name: dockerhub-pull
+  
+  nodeSelector: 
+    kubernetes.io/arch: arm64
+
+  imagePullPolicy: IfNotPresent
+
+serviceAccounts:
+  - enterprise-search
+  - enterprise-search-document
+  - enterprise-search-worker
+
+ingress:
+  enabled: true
+  className: alb
+
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /ping
+    alb.ingress.kubernetes.io/success-codes: "200"
+
+tailscale:
+  enabled: true
+  proxyGroupName: enterprise-search-egress
+  replicas: 1
+
+  dockerHostFqdn: aryas-macbook-air.REPLACE_WITH_TAILNET.ts.net
+
+  dependencies:
+    postgres-external:
+      port: 5433
+
+    redis-external:
+      port: 6379
+
+    qdrant-external:
+      port: 6333
+
+    opensearch-external:
+      port: 9200
+
+    mlflow-external:
+      port: 5050
+
+services:
+  gateway:
+    enabled: true
+    replicaCount: 1
+
+    image:
+      repository: enterprise-search-gateway
+      tag: manual-001
+    
+    serviceAccountName: enterprise-search
+    containerPort: 9080
+    servicePort: 9080
+
+    config: {}
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        memory: 192Mi
+    
+    readinessProbe:
+      httpGet:
+        path: /ping
+        port: http
+      initialDelaySeconds: 5
+      periodSeconds: 10
+    
+    livenessProbe:
+      httpGet:
+        path: /ping
+        port: http
+      initialDelaySeconds: 15
+      periodSeconds: 20
+  
+  web:
+    enabled: true
+    replicaCount: 1
+
+    image:
+      repository: enterprise-search-web
+      tag: manual-001
+
+    serviceAccountName: enterprise-search
+    containerPort: 3000
+    servicePort: 3000
+
+    config:
+      AGENT_API_URL: http://gateway:9080/api/agents/query
+      AGENT_STREAM_API_URL: http://gateway:9080/api/agents/stream
+      CHAT_API_URL: http://gateway:9080/api/chat
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 192Mi
+      limits:
+        memory: 512Mi
+
+    readinessProbe:
+      httpGet:
+        path: /
+        port: http
+      initialDelaySeconds: 10
+      periodSeconds: 10
+
+    livenessProbe:
+      httpGet:
+        path: /
+        port: http
+      initialDelaySeconds: 20
+      periodSeconds: 20
+
+  auth:
+    enabled: true
+    replicaCount: 1
+
+    image:
+      repository: enterprise-search-auth
+      tag: manual-001
+
+    serviceAccountName: enterprise-search
+    secretName: enterprise-search-auth
+    containerPort: 8082
+    servicePort: 8082
+
+    config:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-external:5433/aisearchdb
+      JWT_EXPIRY: "86400"
+      SPRING_JPA_SHOW_SQL: "false"
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 384Mi
+      limits:
+        memory: 768Mi
+
+    readinessProbe:
+      httpGet:
+        path: /actuator/health
+        port: http
+      initialDelaySeconds: 30
+      periodSeconds: 10
+
+    livenessProbe:
+      httpGet:
+        path: /actuator/health
+        port: http
+      initialDelaySeconds: 45
+      periodSeconds: 20
+
+  document:
+    enabled: true
+    replicaCount: 1
+
+    image:
+      repository: enterprise-search-document
+      tag: manual-001
+
+    serviceAccountName: enterprise-search-document
+    secretName: enterprise-search-document
+    containerPort: 8083
+    servicePort: 8083
+
+    config:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-external:5433/aisearchdb
+
+      SPRING_DATA_REDIS_HOST: redis-external
+      SPRING_DATA_REDIS_PORT: "6379"
+      APP_REDIS_STREAM_INGESTION_STREAM: log-ingestion
+
+      AWS_S3_REGION: ap-south-1
+      AWS_S3_ENDPOINT: https://s3.ap-south-1.amazonaws.com
+      AWS_S3_PATH_STYLE_ACCESS: "false"
+      AWS_S3_BUCKET_NAME: replace-with-s3-bucket
+      AWS_S3_BASE_DIR: files
+
+      SPRING_JPA_SHOW_SQL: "false"
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 384Mi
+      limits:
+        memory: 768Mi
+
+    readinessProbe:
+      tcpSocket:
+        port: http
+      initialDelaySeconds: 30
+      periodSeconds: 10
+
+    livenessProbe:
+      tcpSocket:
+        port: http
+      initialDelaySeconds: 45
+      periodSeconds: 20
+
+  query-service:
+    enabled: true
+    replicaCount: 1
+
+    image:
+      repository: enterprise-search-query
+      tag: manual-001
+
+    serviceAccountName: enterprise-search
+    secretName: enterprise-search-query
+    containerPort: 8000
+    servicePort: 8000
+
+    config:
+      QDRANT_URL: http://qdrant-external:6333
+      QDRANT_COLLECTION_NAME: documents
+
+      OPENSEARCH_URL: http://opensearch-external:9200
+      OPENSEARCH_INDEX: normalized-logs
+      OPENSEARCH_USE_SSL: "false"
+      OPENSEARCH_VERIFY_CERTS: "false"
+
+      MLFLOW_ENABLED: "true"
+      MLFLOW_TRACKING_URI: http://mlflow-external:5050
+      MLFLOW_EXPERIMENT_NAME: enterprise-log-agent
+
+      ENABLE_OLLAMA_FALLBACK: "false"
+      EMBEDDING_MODEL: bert-base-uncased
+      EMBEDDING_DEVICE: cpu
+
+      CHAT_MODEL: gemini-3.5-flash
+      APP_TIMEZONE: Asia/Kolkata
+      DEFAULT_TOP_K: "5"
+      MAX_CONTEXT_CHARS: "8000"
+      MAX_OUTPUT_TOKENS: "700"
+
+    resources:
+      requests:
+        cpu: 250m
+        memory: 1Gi
+      limits:
+        memory: 2Gi
+
+    readinessProbe:
+      httpGet:
+        path: /health
+        port: http
+      initialDelaySeconds: 90
+      periodSeconds: 15
+      failureThreshold: 10
+
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: http
+      initialDelaySeconds: 120
+      periodSeconds: 30
+      failureThreshold: 5
+
+  worker-service:
+    enabled: true
+    replicaCount: 1
+
+    image:
+      repository: enterprise-search-worker
+      tag: manual-001
+
+    serviceAccountName: enterprise-search-worker
+    secretName: enterprise-search-worker
+    containerPort: 8090
+    servicePort: 8090
+
+    config:
+      ENV: production
+      HOST: 0.0.0.0
+      PORT: "8090"
+
+      REDIS_STREAM_NAME: log-ingestion
+      REDIS_CONSUMER_GROUP: ingestion-workers
+      REDIS_CONSUMER_NAME: eks-worker-1
+
+      AWS_REGION: ap-south-1
+      AWS_ENDPOINT_URL: https://s3.ap-south-1.amazonaws.com
+      AWS_BUCKET_NAME: replace-with-s3-bucket
+
+      QDRANT_URL: http://qdrant-external:6333
+      QDRANT_COLLECTION_NAME: documents
+      QDRANT_COLLECTION_ALIAS: documents
+      QDRANT_VECTOR_DISTANCE: cosine
+
+      OPENSEARCH_URL: http://opensearch-external:9200
+      OPENSEARCH_LOG_INDEX: normalized-logs
+      OPENSEARCH_USE_SSL: "false"
+      OPENSEARCH_VERIFY_CERTS: "false"
+
+      EMBEDDING_MODEL: bert-base-uncased
+      EMBEDDING_BATCH_SIZE: "16"
+      EMBEDDING_DEVICE: cpu
+
+      PII_MASKING_ENABLED: "true"
+      PII_MODEL_NAME: Isotonic/distilbert_finetuned_ai4privacy_v2
+      PII_SCORE_THRESHOLD: "0.60"
+      PII_MAX_TOKENS: "384"
+      PII_STRIDE: "32"
+      PII_DEVICE: cpu
+
+    resources:
+      requests:
+        cpu: 250m
+        memory: 1500Mi
+      limits:
+        memory: 2500Mi
+
+    readinessProbe:
+      httpGet:
+        path: /health
+        port: http
+      initialDelaySeconds: 90
+      periodSeconds: 15
+      failureThreshold: 10
+
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: http
+      initialDelaySeconds: 120
+      periodSeconds: 30
+      failureThreshold: 5

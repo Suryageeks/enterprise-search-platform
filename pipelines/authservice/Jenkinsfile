@@ -65,14 +65,12 @@ pipeline {
             }
         }
 
-        stage('Clean Docker Image') {
-            steps {
-                sh 'docker rmi "$IMAGE_NAME:$BUILD_NUMBER" || true'
-            }
-        }
     }
 
     post {
+        always {
+            sh 'docker rmi "$IMAGE_NAME:$BUILD_NUMBER" || true'
+        }
         success {
             echo "Created Docker image: ${IMAGE_NAME}:${BUILD_NUMBER}"
         }

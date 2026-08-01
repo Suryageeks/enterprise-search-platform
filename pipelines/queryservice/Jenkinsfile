@@ -1,0 +1,64 @@
+pipeline {
+    agent any
+
+    environment {
+        SERVICE_DIR = 'apps/query-service'
+        IMAGE_NAME = 'query-service'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+
+        stage('Build Docker Image') {
+            steps {
+                dir("${SERVICE_DIR}") {
+                    sh "docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ."
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'docker-hub-credentials',
+                        usernameVariable: 'DOCKER_USERNAME',
+                        passwordVariable: 'DOCKER_PASSWORD'
+                    )
+                ]) {
+                    sh '''
+                        docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
+
+                        REMOTE_IMAGE="$DOCKER_USERNAME/$IMAGE_NAME"
+
+                        docker tag "$IMAGE_NAME:$BUILD_NUMBER" "$REMOTE_IMAGE:$BUILD_NUMBER"
+
+                        docker push "$REMOTE_IMAGE:$BUILD_NUMBER"
+
+                        docker image rm "$REMOTE_IMAGE:$BUILD_NUMBER" || true
+
+                        docker logout
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            sh 'docker rmi "$IMAGE_NAME:$BUILD_NUMBER" || true'
+        }
+        success {
+            echo "Created Docker image: ${IMAGE_NAME}:${BUILD_NUMBER}"
+        }
+
+        failure {
+            echo "Build failed. Please check the logs for details."
+        }
+    }
+}

@@ -1,0 +1,10 @@
+.git
+.idea
+.mvn
+target
+*.iml
+*.log
+.env
+.env.*
+mvnw
+mvnw.cmd

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: enterprise-search-platform
+description: A Helm chart for Enterprise Search Platform
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

@@ -1,0 +1,118 @@
+{{- if .Values.services.gateway.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-routing
+  labels:
+    {{- include "enterprise-search.labels" . | nindent 4 }}
+    app.kubernetes.io/component: gateway
+data:
+  traefik.yml: |
+    api:
+      dashboard: false
+
+    ping:
+      entryPoint: web
+
+    entryPoints:
+      web:
+        address: ":9080"
+        transport:
+          respondingTimeouts:
+            readTimeout: "0s"
+            writeTimeout: "0s"
+            idleTimeout: "0s"
+
+    providers:
+      file:
+        filename: /etc/traefik/dynamic.yml
+        watch: true
+
+    log:
+      level: INFO
+
+    accessLog: {}
+
+  dynamic.yml: |
+    http:
+      routers:
+        auth:
+          entryPoints:
+            - web
+          rule: "PathPrefix(`/api/auth`)"
+          priority: 100
+          middlewares:
+            - strip-api-prefix
+          service: auth
+
+        document:
+          entryPoints:
+            - web
+          rule: "PathPrefix(`/api/document`)"
+          priority: 100
+          middlewares:
+            - strip-api-prefix
+          service: document
+
+        rag:
+          entryPoints:
+            - web
+          rule: "PathPrefix(`/api/rag`)"
+          priority: 100
+          service: query
+
+        analysis:
+          entryPoints:
+            - web
+          rule: "PathPrefix(`/api/analysis`)"
+          priority: 100
+          service: query
+
+        agents:
+          entryPoints:
+            - web
+          rule: "PathPrefix(`/api/agents`)"
+          priority: 100
+          service: query
+
+        chat:
+          entryPoints:
+            - web
+          rule: "PathPrefix(`/api/chat`)"
+          priority: 100
+          service: query
+
+        web:
+          entryPoints:
+            - web
+          rule: "PathPrefix(`/`)"
+          priority: 1
+          service: web
+
+      middlewares:
+        strip-api-prefix:
+          stripPrefix:
+            prefixes:
+              - /api
+
+      services:
+        auth:
+          loadBalancer:
+            servers:
+              - url: http://auth:8082
+
+        document:
+          loadBalancer:
+            servers:
+              - url: http://document:8083
+
+        query:
+          loadBalancer:
+            servers:
+              - url: http://query-service:8000
+
+        web:
+          loadBalancer:
+            servers:
+              - url: http://web:3000
+{{- end }}
