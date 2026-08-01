@@ -29,7 +29,7 @@ tailscale:
   proxyGroupName: enterprise-search-egress
   replicas: 1
 
-  dockerHostFqdn: aryas-macbook-air.REPLACE_WITH_TAILNET.ts.net
+  dockerHostFqdn: aryas-macbook-air.tail56baf2.ts.net
 
   dependencies:
     postgres-external:

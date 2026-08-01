@@ -6,7 +6,7 @@ ingress:
 
 tailscale:
   enabled: true
-  dockerHostFqdn: aryas-macbook-air.REPLACE_WITH_TAILNET.ts.net
+  dockerHostFqdn: aryas-macbook-air.tail56baf2.ts.net
 
 services:
   gateway:
