@@ -54,7 +54,7 @@ services:
 
     image:
       repository: enterprise-search-gateway
-      tag: manual-001
+      tag: 2
     
     serviceAccountName: enterprise-search
     containerPort: 9080
@@ -89,7 +89,7 @@ services:
 
     image:
       repository: web-service
-      tag: manual-001
+      tag: 3
 
     serviceAccountName: enterprise-search
     containerPort: 3000
@@ -127,7 +127,7 @@ services:
 
     image:
       repository: auth-service
-      tag: manual-001
+      tag: 7
 
     serviceAccountName: enterprise-search
     secretName: enterprise-search-auth
@@ -166,7 +166,7 @@ services:
 
     image:
       repository: document-service
-      tag: manual-001
+      tag: 3
 
     serviceAccountName: enterprise-search-document
     secretName: enterprise-search-document
@@ -213,7 +213,7 @@ services:
 
     image:
       repository: query-service
-      tag: manual-001
+      tag: 2
 
     serviceAccountName: enterprise-search
     secretName: enterprise-search-query
@@ -272,7 +272,7 @@ services:
 
     image:
       repository: worker-service
-      tag: manual-001
+      tag: 3
 
     serviceAccountName: enterprise-search-worker
     secretName: enterprise-search-worker
