@@ -1,11 +1,11 @@
 global:
-  imageRegistry: docker.io/replace-with-dockerhub-namespace
+  imageRegistry: docker.io/suryageeks
 
   imagePullSecrets:
     - name: dockerhub-pull
   
   nodeSelector: 
-    kubernetes.io/arch: arm64
+    kubernetes.io/arch: amd64
 
   imagePullPolicy: IfNotPresent
 
@@ -88,7 +88,7 @@ services:
     replicaCount: 1
 
     image:
-      repository: enterprise-search-web
+      repository: web-service
       tag: manual-001
 
     serviceAccountName: enterprise-search
@@ -126,7 +126,7 @@ services:
     replicaCount: 1
 
     image:
-      repository: enterprise-search-auth
+      repository: auth-service
       tag: manual-001
 
     serviceAccountName: enterprise-search
@@ -165,7 +165,7 @@ services:
     replicaCount: 1
 
     image:
-      repository: enterprise-search-document
+      repository: document-service
       tag: manual-001
 
     serviceAccountName: enterprise-search-document
@@ -212,7 +212,7 @@ services:
     replicaCount: 1
 
     image:
-      repository: enterprise-search-query
+      repository: query-service
       tag: manual-001
 
     serviceAccountName: enterprise-search
@@ -271,7 +271,7 @@ services:
     replicaCount: 1
 
     image:
-      repository: enterprise-search-worker
+      repository: worker-service
       tag: manual-001
 
     serviceAccountName: enterprise-search-worker
@@ -284,6 +284,7 @@ services:
       HOST: 0.0.0.0
       PORT: "8090"
 
+      REDIS_URL: redis://redis-external:6379
       REDIS_STREAM_NAME: log-ingestion
       REDIS_CONSUMER_GROUP: ingestion-workers
       REDIS_CONSUMER_NAME: eks-worker-1
