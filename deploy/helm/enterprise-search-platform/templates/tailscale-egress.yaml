@@ -10,6 +10,11 @@ spec:
   replicas: {{ .Values.tailscale.replicas }}
 
 {{- range $name, $dependency := .Values.tailscale.dependencies }}
+{{- $externalName := "placeholder.invalid" }}
+{{- $existingService := lookup "v1" "Service" $.Release.Namespace $name }}
+{{- if and $existingService $existingService.spec.externalName }}
+{{- $externalName = $existingService.spec.externalName }}
+{{- end }}
 ---
 apiVersion: v1
 kind: Service
@@ -23,7 +28,9 @@ metadata:
 
 spec:
   type: ExternalName
-  externalName: placeholder.invalid
+  # Tailscale replaces this value with its egress Service name. Preserve the
+  # live value on upgrades so Helm does not fight the operator for ownership.
+  externalName: {{ $externalName | quote }}
 
   ports:
     - name: tcp
