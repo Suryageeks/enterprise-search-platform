@@ -1,5 +1,5 @@
 global:
-  imageRegistry: docker.io/suryageeks
+  imageRegistry: docker.io/surya987
 
   imagePullSecrets:
     - name: dockerhub-pull
